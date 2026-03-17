@@ -641,4 +641,126 @@ PRODUCT_PACKAGES += <name>-manager
 
 ---
 
-*Last updated: March 2026 | AOSP android-15.0.0_r14 | Target: rpi5*
+## 16. Git & GitHub Setup (repo + vendor/myoem)
+
+### The Two Repositories on GitHub
+
+| Repository | URL | Purpose |
+|------------|-----|---------|
+| `android_vendor_myoem` | `github.com/ProArun/android_vendor_myoem` | All OEM source code |
+| `android_local_manifests` | `github.com/ProArun/android_local_manifests` | Local manifest that wires the tree together |
+
+Hosting the local manifest in its own repo is the key professional practice. It means
+setting up a completely fresh machine is two commands — `repo init` + clone the manifest —
+not a manual file-copying exercise.
+
+### First-Time Setup (already done — reference only)
+
+```bash
+# In vendor/myoem/
+git init
+git branch -m main
+git add .
+git commit -m "Initial commit: OEM vendor layer"
+git remote add origin https://github.com/ProArun/android_vendor_myoem.git
+git push -u origin main
+
+# Let repo take over management of the directory
+cd /path/to/aosp-rpi
+repo sync --force-sync vendor/myoem
+```
+
+`--force-sync` was needed because the directory was created before repo knew about it.
+It discards the local `.git` metadata and re-clones from GitHub. Safe because the
+code was already pushed first.
+
+### Day-to-Day Workflow
+
+```bash
+cd /path/to/aosp-rpi/vendor/myoem
+
+# 1. Make changes (add service, fix bug, etc.)
+# 2. Build and test
+m <module>
+adb shell service list | grep <name>
+
+# 3. Commit and push
+git add .
+git commit -m "Add XYZ service"
+git push origin main
+```
+
+`vendor/myoem` behaves like a normal git repo. `repo` manages it the same way it
+manages every other project in the AOSP tree.
+
+### Setting Up a Second / Fresh Machine
+
+```bash
+# 1. Install repo tool
+mkdir -p ~/.bin
+curl https://storage.googleapis.com/git-repo-downloads/repo > ~/.bin/repo
+chmod a+x ~/.bin/repo
+echo 'export PATH="$HOME/.bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
+
+# 2. Create workspace and init AOSP
+mkdir aosp-rpi && cd aosp-rpi
+repo init \
+    -u https://android.googlesource.com/platform/manifest \
+    -b android-15.0.0_r14 \
+    --git-lfs
+
+# 3. Pull the local manifest (this is the key step — one command wires everything)
+git clone https://github.com/ProArun/android_local_manifests.git \
+    .repo/local_manifests
+
+# 4. Sync the full tree — AOSP + rpi5 BSP + vendor/myoem all in one command
+repo sync -c -j$(nproc) --no-tags
+
+# 5. Build
+source build/envsetup.sh
+lunch myoem_rpi5-trunk_staging-userdebug
+m
+```
+
+When `repo sync` runs it reads the local manifest, finds the `vendor/myoem` entry
+pointing to `ProArun/android_vendor_myoem`, and clones it automatically into the
+right place. No manual `git clone` needed.
+
+### Pulling Changes on an Existing Machine
+
+```bash
+# Pull only vendor/myoem (fast — skips the rest of AOSP)
+repo sync vendor/myoem
+
+# Or pull the entire tree (slower — syncs AOSP too)
+repo sync -c -j$(nproc) --no-tags
+```
+
+### How the local manifest connects everything
+
+```
+.repo/local_manifests/manifest_brcm_rpi.xml
+        │
+        ├── vendor/myoem  ──→  github.com/ProArun/android_vendor_myoem
+        ├── device/brcm/rpi5  ──→  raspberry-vanilla/android_device_brcm_rpi5
+        ├── external/drm_hwcomposer (pinned commit)
+        └── ... (other rpi5 dependencies)
+```
+
+The manifest is the single source of truth for the entire tree. Updating it
+(e.g., changing the `revision` of a dependency or adding a new project) automatically
+applies to every machine on the next `repo sync`.
+
+### Why `revision="main"` and not a commit hash
+
+For `vendor/myoem` we track the `main` branch, not a pinned commit. This means
+`repo sync vendor/myoem` always pulls the latest code. This is correct for your own
+code — you control the branch and you want changes to propagate immediately.
+
+For third-party dependencies like `drm_hwcomposer`, we pin a specific commit hash
+because upstream can break compatibility. For your own vendor code, branch tracking
+is the right choice.
+
+---
+
+*Last updated: March 2026 | AOSP android-15.0.0_r14 | Target: rpi5 | GitHub: ProArun*
