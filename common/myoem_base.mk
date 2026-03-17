@@ -1,0 +1,30 @@
+#
+# Copyright (C) 2024 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+#
+# myoem_base.mk — shared config included by every MyOEM product.
+# Add packages, overlays, and properties here that apply to ALL variants.
+#
+
+# Soong namespace for every module under vendor/myoem/
+PRODUCT_SOONG_NAMESPACES += \
+    vendor/myoem/services/calculator \
+    vendor/myoem/services/bmi
+
+# ── OEM services (present on all products) ─────────────────────────────────
+PRODUCT_PACKAGES += \
+    calculatord \
+    calculator_client \
+    bmid \
+    bmi_client
+
+# ── SELinux ────────────────────────────────────────────────────────────────
+PRODUCT_PRIVATE_SEPOLICY_DIRS += \
+    vendor/myoem/services/calculator/sepolicy/private \
+    vendor/myoem/services/bmi/sepolicy/private
+
+# ── OEM properties ────────────────────────────────────────────────────────
+# Readable at runtime via android.os.SystemProperties.get("ro.myoem.version")
+PRODUCT_VENDOR_PROPERTIES += \
+    ro.myoem.version=1.0 \
+    ro.myoem.build.type=$(TARGET_BUILD_VARIANT)

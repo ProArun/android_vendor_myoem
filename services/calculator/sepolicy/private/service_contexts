@@ -1,0 +1,6 @@
+# Copyright (C) 2024 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+
+# Maps the binder service name to its SELinux label.
+# Must exactly match the string passed to sm->addService() in main.cpp.
+com.myoem.calculator.ICalculatorService    u:object_r:calculatord_service:s0

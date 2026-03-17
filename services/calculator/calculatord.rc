@@ -1,0 +1,9 @@
+# Copyright (C) 2024 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+
+service calculatord /vendor/bin/calculatord
+    class main
+    user system
+    group system
+    # Restart automatically if the service crashes
+    # (no 'oneshot' — let init restart on failure)

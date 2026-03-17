@@ -1,0 +1,4 @@
+# Copyright (C) 2024 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+
+/vendor/bin/bmid    u:object_r:bmid_exec:s0

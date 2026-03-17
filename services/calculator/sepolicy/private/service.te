@@ -1,0 +1,7 @@
+# Copyright (C) 2024 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+
+# Binder service type for the calculator service entry in ServiceManager.
+# app_api_service  — allows apps (untrusted_app, priv_app, etc.) to find it
+# service_manager_type — mandatory attribute for all ServiceManager entries
+type calculatord_service, app_api_service, service_manager_type;

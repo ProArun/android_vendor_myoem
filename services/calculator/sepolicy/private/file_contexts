@@ -1,0 +1,5 @@
+# Copyright (C) 2024 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+
+# Label the calculatord executable so init can transition into the calculatord domain
+/vendor/bin/calculatord    u:object_r:calculatord_exec:s0

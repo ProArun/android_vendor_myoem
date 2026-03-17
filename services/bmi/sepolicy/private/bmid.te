@@ -1,0 +1,12 @@
+# Copyright (C) 2024 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+
+type bmid, domain;
+type bmid_exec, exec_type, vendor_file_type, file_type;
+
+init_daemon_domain(bmid)
+
+binder_use(bmid)
+binder_service(bmid)
+
+add_service(bmid, bmid_service)

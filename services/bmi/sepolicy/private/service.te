@@ -1,0 +1,4 @@
+# Copyright (C) 2024 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+
+type bmid_service, app_api_service, service_manager_type;

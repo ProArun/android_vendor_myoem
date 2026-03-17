@@ -1,0 +1,4 @@
+# Android build artifacts that might land here
+*.pyc
+*.swp
+.DS_Store

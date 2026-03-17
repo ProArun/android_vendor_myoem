@@ -1,0 +1,88 @@
+// Copyright (C) 2024 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+// Declare Soong namespace — must match the entry in PRODUCT_SOONG_NAMESPACES
+soong_namespace {
+}
+
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// AIDL interface library
+//
+// Generates:
+//   calculatorservice-aidl-cpp  (cc_library_shared, server/client C++ stubs)
+//   calculatorservice-aidl-java (java_library, client Java stubs)
+// ──────────────────────────────────────────────────────────────────────────────
+aidl_interface {
+    name: "calculatorservice-aidl",
+    vendor_available: true,
+    unstable: true,
+    srcs: ["aidl/com/myoem/calculator/ICalculatorService.aidl"],
+    local_include_dir: "aidl",
+    backend: {
+        cpp: {
+            enabled: false,
+        },
+        java: {
+            enabled: true,
+            platform_apis: true,
+        },
+        ndk: {
+            enabled: true,  // libbinder_ndk is LLNDK — works from vendor, talks to system ServiceManager
+        },
+        rust: {
+            enabled: false,
+        },
+    },
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Command-line test client
+//
+// Installed to: /vendor/bin/calculator_client
+// Usage: calculator_client <add|sub|mul|div> <a> <b>
+// ──────────────────────────────────────────────────────────────────────────────
+cc_binary {
+    name: "calculator_client",
+    vendor: true,
+    srcs: ["test/calculator_client.cpp"],
+    shared_libs: [
+        "libbinder_ndk",
+        "liblog",
+    ],
+    static_libs: [
+        "calculatorservice-aidl-ndk",
+    ],
+    cflags: ["-Wall", "-Wextra", "-Werror"],
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Calculator service binary
+//
+// Installed to: /vendor/bin/calculatord
+// init.rc fragment installed to: /vendor/etc/init/calculatord.rc
+// ──────────────────────────────────────────────────────────────────────────────
+cc_binary {
+    name: "calculatord",
+    vendor: true,
+    init_rc: ["calculatord.rc"],
+    srcs: [
+        "src/CalculatorService.cpp",
+        "src/main.cpp",
+    ],
+    shared_libs: [
+        "libbinder_ndk",
+        "liblog",
+    ],
+    static_libs: [
+        "calculatorservice-aidl-ndk",
+    ],
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}

@@ -1,0 +1,90 @@
+// Copyright (C) 2024 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+soong_namespace {
+}
+
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// AIDL interface library
+//
+// Generates:
+//   bmiservice-aidl-cpp   (C++ server/client stubs)
+//   bmiservice-aidl-java  (Java client stubs)
+// ──────────────────────────────────────────────────────────────────────────────
+aidl_interface {
+    name: "bmiservice-aidl",
+    vendor_available: true,
+    unstable: true,
+    srcs: ["aidl/com/myoem/bmi/IBMIService.aidl"],
+    local_include_dir: "aidl",
+    backend: {
+        cpp: {
+            enabled: false,
+        },
+        java: {
+            enabled: true,
+            platform_apis: true,
+        },
+        ndk: {
+            enabled: true,
+        },
+        rust: {
+            enabled: false,
+        },
+    },
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// BMI test client
+//
+// Installed to: /vendor/bin/bmi_client
+// ──────────────────────────────────────────────────────────────────────────────
+cc_binary {
+    name: "bmi_client",
+    vendor: true,
+    srcs: ["test/bmi_client.cpp"],
+    shared_libs: [
+        "libbinder_ndk",
+        "liblog",
+    ],
+    static_libs: [
+        "bmiservice-aidl-ndk",
+    ],
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// BMI service binary
+//
+// Installed to: /vendor/bin/bmid
+// init.rc installed to: /vendor/etc/init/bmid.rc
+// ──────────────────────────────────────────────────────────────────────────────
+cc_binary {
+    name: "bmid",
+    vendor: true,
+    init_rc: ["bmid.rc"],
+    srcs: [
+        "src/BMIService.cpp",
+        "src/main.cpp",
+    ],
+    shared_libs: [
+        "libbinder_ndk",
+        "liblog",
+    ],
+    static_libs: [
+        "bmiservice-aidl-ndk",
+    ],
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}

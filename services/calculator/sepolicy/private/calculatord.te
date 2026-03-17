@@ -1,0 +1,17 @@
+# Copyright (C) 2024 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+
+# Process domain for the calculatord binary
+type calculatord, domain;
+type calculatord_exec, exec_type, vendor_file_type, file_type;
+
+# Allow init to launch and transition into the calculatord domain
+init_daemon_domain(calculatord)
+
+# Allow using the binder IPC mechanism and registering as a service
+binder_use(calculatord)
+binder_service(calculatord)
+
+# Allow registering the service with the ServiceManager
+add_service(calculatord, calculatord_service)
+
