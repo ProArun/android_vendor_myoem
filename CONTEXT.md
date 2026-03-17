@@ -751,6 +751,45 @@ The manifest is the single source of truth for the entire tree. Updating it
 (e.g., changing the `revision` of a dependency or adding a new project) automatically
 applies to every machine on the next `repo sync`.
 
+### Git Gotchas After `repo sync`
+
+Two things break every time after a `repo sync --force-sync` or fresh `repo sync`:
+
+**Problem 1 — Detached HEAD**
+```
+Not currently on any branch.
+error: src refspec main does not match any
+```
+`repo` checks out a specific commit hash, not a branch. Fix:
+```bash
+git checkout main        # if branch already exists locally
+# OR
+git checkout -b main     # first time after a force-sync
+```
+
+**Problem 2 — Remote wiped**
+```
+fatal: 'origin' does not appear to be a git repository
+```
+`--force-sync` re-clones the directory and discards remote config. Fix:
+```bash
+git remote add origin https://github.com/ProArun/android_vendor_myoem.git
+git push -u origin main
+```
+
+**Combined recovery after `repo sync --force-sync vendor/myoem`:**
+```bash
+cd vendor/myoem
+git checkout -b main
+git remote add origin https://github.com/ProArun/android_vendor_myoem.git
+git push -u origin main
+```
+
+After a normal `repo sync` (no `--force-sync`), only detached HEAD occurs —
+remote is preserved. Just run `git checkout main`.
+
+---
+
 ### Why `revision="main"` and not a commit hash
 
 For `vendor/myoem` we track the `main` branch, not a pinned commit. This means
