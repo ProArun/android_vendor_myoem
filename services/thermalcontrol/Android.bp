@@ -1,0 +1,79 @@
+// Copyright (C) 2024 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+soong_namespace {
+    // Import the HAL namespace so we can reference libthermalcontrolhal
+    imports: ["vendor/myoem/hal/thermalcontrol"],
+}
+
+// ── AIDL interface ────────────────────────────────────────────────────────────
+
+aidl_interface {
+    name: "thermalcontrolservice-aidl",
+    vendor_available: true,
+    unstable: true,
+    srcs: ["aidl/com/myoem/thermalcontrol/IThermalControlService.aidl"],
+    local_include_dir: "aidl",
+    backend: {
+        cpp: { enabled: false },   // Never — uses libbinder (VNDK), wrong for vendor
+        java: {
+            enabled: true,
+            platform_apis: true,
+        },
+        ndk: { enabled: true },    // Uses libbinder_ndk (LLNDK) — correct for vendor
+        rust: { enabled: false },
+    },
+}
+
+// ── Binder service daemon ─────────────────────────────────────────────────────
+
+cc_binary {
+    name: "thermalcontrold",
+    vendor: true,
+    init_rc: ["thermalcontrold.rc"],
+
+    srcs: [
+        "src/ThermalControlService.cpp",
+        "src/main.cpp",
+    ],
+
+    shared_libs: [
+        "libbinder_ndk",
+        "liblog",
+        "libthermalcontrolhal",
+    ],
+
+    static_libs: [
+        "thermalcontrolservice-aidl-ndk",
+    ],
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}
+
+// ── CLI test client ───────────────────────────────────────────────────────────
+
+cc_binary {
+    name: "thermalcontrol_client",
+    vendor: true,
+
+    srcs: ["test/thermalcontrol_client.cpp"],
+
+    shared_libs: [
+        "libbinder_ndk",
+        "liblog",
+    ],
+
+    static_libs: [
+        "thermalcontrolservice-aidl-ndk",
+    ],
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}

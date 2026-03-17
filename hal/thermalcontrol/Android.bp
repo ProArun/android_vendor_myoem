@@ -1,0 +1,28 @@
+// Copyright (C) 2024 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+soong_namespace {}
+
+cc_library_shared {
+    name: "libthermalcontrolhal",
+    vendor: true,
+
+    srcs: [
+        "src/SysfsHelper.cpp",
+        "src/ThermalControlHal.cpp",
+    ],
+
+    // IThermalControlHal.h is exported so the service can include it
+    export_include_dirs: ["include"],
+
+    // SysfsHelper.h and ThermalControlHal.h are private to this library
+    local_include_dirs: ["src"],
+
+    shared_libs: ["liblog"],
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}

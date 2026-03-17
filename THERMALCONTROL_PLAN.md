@@ -272,14 +272,14 @@ type thermalcontrold_service, app_api_service, service_manager_type;
 
 #### Checklist
 
-- [ ] **1.1** Create directory `vendor/myoem/hal/thermalcontrol/`
-- [ ] **1.2** Write `include/thermalcontrol/IThermalControlHal.h` — pure virtual C++ interface
-- [ ] **1.3** Write `src/SysfsHelper.cpp` — generic sysfs read/write helpers
-  - `readInt(path)` → reads integer from file, returns -1 on error
-  - `readFloat(path)` → reads float from file
-  - `writeInt(path, value)` → writes integer to file, returns bool success
+- [x] **1.1** Create directory `vendor/myoem/hal/thermalcontrol/`
+- [x] **1.2** Write `include/thermalcontrol/IThermalControlHal.h` — pure virtual C++ interface
+- [x] **1.3** Write `src/SysfsHelper.h` + `src/SysfsHelper.cpp` — generic sysfs read/write helpers
+  - `sysfsReadInt(path)` → reads integer from file, returns -1 on error
+  - `sysfsReadFloat(path)` → reads float from file
+  - `sysfsWriteInt(path, value)` → writes integer to file, returns bool success
   - `discoverHwmonPath()` → scans `/sys/class/hwmon/hwmon*/pwm1`, returns the dir path
-- [ ] **1.4** Write `src/ThermalControlHal.h` / `ThermalControlHal.cpp`
+- [x] **1.4** Write `src/ThermalControlHal.h` / `ThermalControlHal.cpp`
   - Constructor calls `discoverHwmonPath()`, stores result as member
   - All methods return safe defaults (`-1`, `false`) if path not found
   - `getCpuTemperatureCelsius()` → reads `thermal_zone0/temp`, divides by 1000.0f
@@ -287,7 +287,7 @@ type thermalcontrold_service, app_api_service, service_manager_type;
   - `setFanSpeed(percent)` → converts 0–100 → 0–255, writes to `pwm1`, also writes `1` to `pwm1_enable`
   - `setAutoMode(true)` → writes `2` to `pwm1_enable`
   - `setFanEnabled(false)` → writes `0` to `pwm1`, writes `1` to `pwm1_enable`
-- [ ] **1.5** Write `Android.bp` for `cc_library_shared` named `libthermalcontrolhal`
+- [x] **1.5** Write `Android.bp` for `cc_library_shared` named `libthermalcontrolhal`
   - `vendor: true`
   - `export_include_dirs: ["include"]`
   - No binder dependency (pure sysfs)
@@ -337,34 +337,33 @@ echo 2 > /sys/class/hwmon/hwmon0/pwm1_enable   # back to auto
 
 #### Checklist
 
-- [ ] **2.1** Create directory `vendor/myoem/services/thermalcontrol/`
-- [ ] **2.2** Write `aidl/com/myoem/thermalcontrol/IThermalControlService.aidl`
+- [x] **2.1** Create directory `vendor/myoem/services/thermalcontrol/`
+- [x] **2.2** Write `aidl/com/myoem/thermalcontrol/IThermalControlService.aidl`
   - All 7 methods from the AIDL design above
-  - 4 error constants
-- [ ] **2.3** Write `Android.bp`
+  - 3 error constants (ERROR_HAL_UNAVAILABLE, ERROR_INVALID_SPEED, ERROR_SYSFS_WRITE)
+- [x] **2.3** Write `Android.bp`
   - `aidl_interface` with `ndk` backend only (`cpp: false`)
   - `cc_binary` `thermalcontrold` with `vendor: true`, links `libthermalcontrolhal`
   - `cc_binary` `thermalcontrol_client` for testing
-- [ ] **2.4** Write `src/ThermalControlService.h` — inherits `BnThermalControlService`
-- [ ] **2.5** Write `src/ThermalControlService.cpp`
-  - Constructor creates `ThermalControlHal` instance (owned by service)
+  - `soong_namespace` imports `vendor/myoem/hal/thermalcontrol`
+- [x] **2.4** Write `src/ThermalControlService.h` — inherits `BnThermalControlService`
+- [x] **2.5** Write `src/ThermalControlService.cpp`
+  - Constructor creates HAL via `createThermalControlHal()` factory
   - Each AIDL method delegates to HAL, converts errors to `ScopedAStatus::fromServiceSpecificError`
-  - `setFanSpeed`: validate 0–100 range first, return `ERROR_INVALID_SPEED` if bad
-  - `setFanEnabled`/`setFanSpeed`: check auto mode, return `ERROR_IN_AUTO_MODE` if set
-- [ ] **2.6** Write `src/main.cpp` — standard 5-step binder service skeleton
+  - `setFanSpeed`: validates 0–100, returns `ERROR_INVALID_SPEED` if bad
+- [x] **2.6** Write `src/main.cpp` — standard 5-step binder service skeleton
   - Service name: `com.myoem.thermalcontrol.IThermalControlService`
-- [ ] **2.7** Write `thermalcontrold.rc`
-  - `user system`, `group system`
-  - `class main`
-- [ ] **2.8** Write SELinux policy (4 files in `sepolicy/private/`)
-  - `thermalcontrold.te`: domain, exec, sysfs permissions for thermal + hwmon
+- [x] **2.7** Write `thermalcontrold.rc` — `user system`, `group system`, `class main`
+- [x] **2.8** Write SELinux policy (4 files in `sepolicy/private/`)
+  - `thermalcontrold.te`: domain, exec, sysfs_thermal + sysfs_hwmon permissions
   - `service.te`: `app_api_service, service_manager_type`
   - `file_contexts`: `/vendor/bin/thermalcontrold`
   - `service_contexts`: `com.myoem.thermalcontrol.IThermalControlService`
-- [ ] **2.9** Write `test/thermalcontrol_client.cpp`
-  - Accepts command-line args: `temp`, `rpm`, `on`, `off`, `speed <N>`, `auto`
-  - Prints human-readable output with units
-- [ ] **2.10** Add all three entries to `myoem_base.mk` (namespaces, packages, sepolicy)
+- [x] **2.9** Write `test/thermalcontrol_client.cpp`
+  - Commands: `temp`, `rpm`, `percent`, `running`, `auto_status`, `on`, `off`, `speed <N>`, `auto`, `manual`
+  - Prints human-readable output with units and error names
+- [x] **2.10** Add all three entries to `myoem_base.mk` (namespaces, packages, sepolicy)
+- [x] **HAL factory** Added `createThermalControlHal()` to `IThermalControlHal.h` so service never needs concrete header
 
 #### Build Commands
 
@@ -607,8 +606,8 @@ Phase 4 → ThermalMonitor             (depends on thermalcontrol-manager)
 
 ## Overall Progress
 
-- [ ] **Phase 1** — HAL Layer complete
-- [ ] **Phase 2** — Binder Service complete
+- [x] **Phase 1** — HAL Layer complete
+- [x] **Phase 2** — Binder Service complete
 - [ ] **Phase 3** — Java Manager complete
 - [ ] **Phase 4** — Android App complete
 - [ ] **Integration** — End-to-end test passing

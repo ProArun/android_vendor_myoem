@@ -1,0 +1,13 @@
+# Make hwmon fan control files writable by system user at boot.
+# The pwm-fan driver creates these as root:root 0644 (read-only for non-root).
+# Init runs as root, so it can chmod sysfs nodes before the service starts.
+on boot
+    chown root system /sys/class/hwmon/hwmon2/pwm1
+    chown root system /sys/class/hwmon/hwmon2/pwm1_enable
+    chmod 0664 /sys/class/hwmon/hwmon2/pwm1
+    chmod 0664 /sys/class/hwmon/hwmon2/pwm1_enable
+
+service thermalcontrold /vendor/bin/thermalcontrold
+    class main
+    user system
+    group system

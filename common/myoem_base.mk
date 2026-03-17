@@ -9,19 +9,24 @@
 # Soong namespace for every module under vendor/myoem/
 PRODUCT_SOONG_NAMESPACES += \
     vendor/myoem/services/calculator \
-    vendor/myoem/services/bmi
+    vendor/myoem/services/bmi \
+    vendor/myoem/hal/thermalcontrol \
+    vendor/myoem/services/thermalcontrol
 
 # ── OEM services (present on all products) ─────────────────────────────────
 PRODUCT_PACKAGES += \
     calculatord \
     calculator_client \
     bmid \
-    bmi_client
+    bmi_client \
+    thermalcontrold \
+    thermalcontrol_client
 
 # ── SELinux ────────────────────────────────────────────────────────────────
 PRODUCT_PRIVATE_SEPOLICY_DIRS += \
     vendor/myoem/services/calculator/sepolicy/private \
-    vendor/myoem/services/bmi/sepolicy/private
+    vendor/myoem/services/bmi/sepolicy/private \
+    vendor/myoem/services/thermalcontrol/sepolicy/private
 
 # ── OEM properties ────────────────────────────────────────────────────────
 # Readable at runtime via android.os.SystemProperties.get("ro.myoem.version")
