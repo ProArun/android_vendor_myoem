@@ -419,17 +419,18 @@ adb logcat | grep "avc: denied" | grep thermalcontrol
 
 #### Checklist
 
-- [ ] **3.1** Create directory structure `vendor/myoem/libs/thermalcontrol/java/com/myoem/thermalcontrol/`
-- [ ] **3.2** Write `Android.bp` as `java_sdk_library`
-- [ ] **3.3** Write `ThermalControlManager.java`
+- [x] **3.1** Create directory structure `vendor/myoem/libs/thermalcontrol/java/com/myoem/thermalcontrol/`
+- [x] **3.2** Write `Android.bp` as `java_library` (vendor:true, sdk_version:system_current)
+- [x] **3.3** Write `ThermalControlManager.java`
   - `SERVICE_NAME = "com.myoem.thermalcontrol.IThermalControlService"`
   - Constructor: `ServiceManager.checkService(SERVICE_NAME)` → `IThermalControlService.Stub.asInterface()`
   - `isAvailable()` → returns false if binder is null (graceful degradation)
   - All 7 public methods mirroring the AIDL interface
   - Each method catches `RemoteException` and returns a safe sentinel (`-1`, `false`)
-  - Static constants: `ERROR_HAL_UNAVAILABLE`, `ERROR_INVALID_SPEED`, etc.
+  - Static constants: `ERROR_HAL_UNAVAILABLE`, `ERROR_INVALID_SPEED`, `ERROR_SYSFS_WRITE`
   - Static utility: `categorizeTemperature(float celsius)` → returns `"Cool"/"Warm"/"Hot"/"Critical"`
-- [ ] **3.4** Add namespace + packages to `myoem_base.mk`
+  - Static utility: `temperatureColor(float celsius)` → returns Material color int
+- [x] **3.4** Add namespace + packages to `myoem_base.mk`
 
 #### Test Strategy — Phase 3
 
@@ -448,37 +449,15 @@ adb logcat | grep ThermalControlManager
 
 #### Checklist
 
-- [ ] **4.1** Create directory structure `vendor/myoem/apps/ThermalMonitor/`
-- [ ] **4.2** Write `Android.bp` as `android_app`
-  - `platform_apis: true` (required to use `ThermalControlManager` which is a system library)
-  - `privileged: true` (install to `/system/priv-app/`)
-  - `certificate: "platform"` (signed with platform cert to call system services)
-  - Link `thermalcontrol-manager` and Compose libraries
-- [ ] **4.3** Write `AndroidManifest.xml`
-  - Package: `com.myoem.thermalmonitor`
-  - Min SDK: 34 (Android 14 / AOSP 15 compatible)
-  - Single activity: `MainActivity`
-- [ ] **4.4** Write `ThermalViewModel.kt`
-  - Extends `ViewModel()`
-  - `UiState` data class: `cpuTempCelsius`, `fanRpm`, `fanSpeedPercent`, `isFanRunning`, `isAutoMode`, `errorMessage`
-  - `StateFlow<UiState>` as the single source of truth
-  - `viewModelScope.launch` with `Dispatchers.IO` for all HAL calls
-  - Auto-refresh: `while(true) { fetchData(); delay(2000) }` coroutine in init
-  - Methods: `turnFanOn()`, `turnFanOff()`, `setFanSpeed(percent)`, `setAutoMode()`
-- [ ] **4.5** Write `ThermalScreen.kt` — Jetpack Compose UI
-  - **Temperature Card:** Large text showing `XX.X °C` with color coding
-    - ≤ 50°C → Green, 50–70°C → Yellow/Amber, > 70°C → Red
-  - **Fan Status Card:** Shows RPM and current speed percentage
-  - **Fan Control Section:**
-    - Row of buttons: `[ Turn On ] [ Turn Off ] [ Auto Mode ]`
-    - `Slider` (0f–100f) + `TextField` for manual speed entry
-    - `Button` to apply slider/text value → calls `viewModel.setFanSpeed()`
-  - **Auto Mode Indicator:** Badge/chip showing "AUTO" when in auto mode
-  - `LaunchedEffect` to collect StateFlow updates
-- [ ] **4.6** Write `MainActivity.kt` — minimal Compose host activity
-- [ ] **4.7** Write `Theme.kt` — Material3 dark theme
-- [ ] **4.8** Write `strings.xml`
-- [ ] **4.9** Add to `myoem_base.mk`
+- [x] **4.1** Create directory structure `vendor/myoem/apps/ThermalMonitor/`
+- [x] **4.2** Write `Android.bp` as `android_app` — platform_apis, privileged, certificate:platform
+- [x] **4.3** Write `AndroidManifest.xml` — package com.myoem.thermalmonitor, minSdk 34
+- [x] **4.4** Write `ThermalViewModel.kt` — UiState, StateFlow, 2s poll loop, control methods, factory
+- [x] **4.5** Write `ThermalScreen.kt` — Scaffold+TopAppBar, TemperatureCard, FanStatusCard, FanControlCard, AUTO badge
+- [x] **4.6** Write `MainActivity.kt` — ServiceManager lookup, ViewModel factory, setContent
+- [x] **4.7** Write `Theme.kt` — Material3 dark color scheme
+- [x] **4.8** Write `strings.xml` + `styles.xml`
+- [x] **4.9** Add to `myoem_base.mk`
 
 #### App UI Layout Sketch
 
@@ -608,7 +587,7 @@ Phase 4 → ThermalMonitor             (depends on thermalcontrol-manager)
 
 - [x] **Phase 1** — HAL Layer complete
 - [x] **Phase 2** — Binder Service complete
-- [ ] **Phase 3** — Java Manager complete
+- [x] **Phase 3** — Java Manager complete ✓ built successfully
 - [ ] **Phase 4** — Android App complete
 - [ ] **Integration** — End-to-end test passing
 

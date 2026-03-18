@@ -1,0 +1,24 @@
+// Copyright (C) 2024 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+soong_namespace {
+    // Import the service namespace so we can reference thermalcontrolservice-aidl-java
+    imports: ["vendor/myoem/services/thermalcontrol"],
+}
+
+java_library {
+    name: "thermalcontrol-manager",
+    vendor: true,
+
+    srcs: ["java/**/*.java"],
+
+    libs: [
+        "thermalcontrolservice-aidl-V1-java",
+    ],
+
+    // ServiceManager is @hide and not in any sdk_version surface.
+    // The manager takes an IBinder in its constructor — the app (which has
+    // platform_apis:true) calls ServiceManager.checkService() and passes the
+    // result here. This way the manager only needs public SDK types.
+    sdk_version: "system_current",
+}

@@ -9,8 +9,9 @@
 
 #include "ThermalControlService.h"
 
+// VINTF AIDL HAL name format: <interface_descriptor>/<instance>
 static constexpr const char* kServiceName =
-        "com.myoem.thermalcontrol.IThermalControlService";
+        "com.myoem.thermalcontrol.IThermalControlService/default";
 
 int main() {
     ALOGI("thermalcontrold starting");

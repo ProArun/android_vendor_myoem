@@ -29,7 +29,7 @@
 using aidl::com::myoem::thermalcontrol::IThermalControlService;
 
 static constexpr const char* kServiceName =
-        "com.myoem.thermalcontrol.IThermalControlService";
+        "com.myoem.thermalcontrol.IThermalControlService/default";
 
 static void printUsage(const char* prog) {
     fprintf(stderr,

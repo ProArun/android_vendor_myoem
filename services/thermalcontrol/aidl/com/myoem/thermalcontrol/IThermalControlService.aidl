@@ -3,6 +3,7 @@
 
 package com.myoem.thermalcontrol;
 
+@VintfStability
 interface IThermalControlService {
     // ── Read operations ──────────────────────────────────────────────────────
 

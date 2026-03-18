@@ -11,7 +11,9 @@ PRODUCT_SOONG_NAMESPACES += \
     vendor/myoem/services/calculator \
     vendor/myoem/services/bmi \
     vendor/myoem/hal/thermalcontrol \
-    vendor/myoem/services/thermalcontrol
+    vendor/myoem/services/thermalcontrol \
+    vendor/myoem/libs/thermalcontrol \
+    vendor/myoem/apps/ThermalMonitor
 
 # ── OEM services (present on all products) ─────────────────────────────────
 PRODUCT_PACKAGES += \
@@ -20,7 +22,10 @@ PRODUCT_PACKAGES += \
     bmid \
     bmi_client \
     thermalcontrold \
-    thermalcontrol_client
+    thermalcontrol_client \
+    thermalcontrol-manager \
+    thermalcontrol-vintf-fragment \
+    ThermalMonitor
 
 # ── SELinux ────────────────────────────────────────────────────────────────
 PRODUCT_PRIVATE_SEPOLICY_DIRS += \
