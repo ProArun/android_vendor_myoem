@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2024 MyOEM
+  SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="app_name">ThermalMonitor</string>
+    <string name="cpu_temperature">CPU Temperature</string>
+    <string name="fan_status">Fan Status</string>
+    <string name="fan_speed">Speed</string>
+    <string name="fan_rpm">RPM</string>
+    <string name="fan_running">Running</string>
+    <string name="fan_control">Fan Control</string>
+    <string name="turn_on">Turn On</string>
+    <string name="turn_off">Turn Off</string>
+    <string name="auto_mode">Auto</string>
+    <string name="set_speed">Set Speed</string>
+    <string name="apply">Apply</string>
+    <string name="service_unavailable">Service Unavailable</string>
+</resources>

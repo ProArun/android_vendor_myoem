@@ -1,0 +1,17 @@
+type thermalcontrold,      domain;
+type thermalcontrold_exec, exec_type, vendor_file_type, file_type;
+
+init_daemon_domain(thermalcontrold)
+binder_use(thermalcontrold)
+binder_service(thermalcontrold)
+add_service(thermalcontrold, thermalcontrold_service)
+
+# Allow reading CPU temperature sysfs node
+allow thermalcontrold sysfs_thermal:file r_file_perms;
+allow thermalcontrold sysfs_thermal:dir  r_dir_perms;
+
+# Allow reading and writing fan hwmon sysfs nodes (pwm1, pwm1_enable, fan1_input)
+# sysfs_hwmon is not defined in AOSP 15 base policy; hwmon files carry the
+# generic sysfs label on this build — use sysfs type here.
+allow thermalcontrold sysfs:file rw_file_perms;
+allow thermalcontrold sysfs:dir  r_dir_perms;

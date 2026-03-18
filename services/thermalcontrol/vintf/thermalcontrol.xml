@@ -1,0 +1,15 @@
+<manifest version="1.0" type="device">
+    <!--
+      VINTF manifest fragment for the MyOEM ThermalControl AIDL HAL.
+      Declares IThermalControlService/default so the service manager accepts
+      registration from thermalcontrold (stability: vintf requires this entry).
+    -->
+    <hal format="aidl">
+        <name>com.myoem.thermalcontrol</name>
+        <version>1</version>
+        <interface>
+            <name>IThermalControlService</name>
+            <instance>default</instance>
+        </interface>
+    </hal>
+</manifest>

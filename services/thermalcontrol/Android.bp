@@ -1,0 +1,97 @@
+// Copyright (C) 2024 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+soong_namespace {
+    // Import the HAL namespace so we can reference libthermalcontrolhal
+    imports: ["vendor/myoem/hal/thermalcontrol"],
+}
+
+// ── AIDL interface ────────────────────────────────────────────────────────────
+
+aidl_interface {
+    name: "thermalcontrolservice-aidl",
+    owner: "myoem",
+    vendor_available: true,
+    // stability: "vintf" enables cross-partition binder calls (system app → vendor service).
+    // "unstable: true" is incompatible with vintf — remove it and version the interface.
+    stability: "vintf",
+    srcs: ["aidl/com/myoem/thermalcontrol/IThermalControlService.aidl"],
+    local_include_dir: "aidl",
+    versions_with_info: [
+        {
+            version: "1",
+            imports: [],
+        },
+    ],
+    backend: {
+        cpp: { enabled: false },   // Never — uses libbinder (VNDK), wrong for vendor
+        java: {
+            enabled: true,
+            // No platform_apis — generated AIDL stubs only need public SDK types.
+            // Keeping this unset lets vendor java_library depend on it with sdk_version.
+        },
+        ndk: { enabled: true },    // Uses libbinder_ndk (LLNDK) — correct for vendor
+        rust: { enabled: false },
+    },
+}
+
+// ── Binder service daemon ─────────────────────────────────────────────────────
+
+cc_binary {
+    name: "thermalcontrold",
+    vendor: true,
+    init_rc: ["thermalcontrold.rc"],
+
+    srcs: [
+        "src/ThermalControlService.cpp",
+        "src/main.cpp",
+    ],
+
+    shared_libs: [
+        "libbinder_ndk",
+        "liblog",
+        "libthermalcontrolhal",
+    ],
+
+    static_libs: [
+        "thermalcontrolservice-aidl-V1-ndk",
+    ],
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}
+
+// ── VINTF manifest fragment ───────────────────────────────────────────────────
+
+vintf_fragment {
+    name: "thermalcontrol-vintf-fragment",
+    src: "vintf/thermalcontrol.xml",
+    vendor: true,
+}
+
+// ── CLI test client ───────────────────────────────────────────────────────────
+
+cc_binary {
+    name: "thermalcontrol_client",
+    vendor: true,
+
+    srcs: ["test/thermalcontrol_client.cpp"],
+
+    shared_libs: [
+        "libbinder_ndk",
+        "liblog",
+    ],
+
+    static_libs: [
+        "thermalcontrolservice-aidl-V1-ndk",
+    ],
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}

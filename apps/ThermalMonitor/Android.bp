@@ -1,0 +1,53 @@
+// Copyright (C) 2024 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+soong_namespace {
+    imports: [
+        "vendor/myoem/libs/thermalcontrol",
+        "vendor/myoem/services/thermalcontrol",
+    ],
+}
+
+android_app {
+    name: "ThermalMonitor",
+
+    // platform_apis:true is required to call ServiceManager.checkService() (@hide API)
+    platform_apis: true,
+
+    // Install to /system/priv-app/ — needed for a privileged platform app
+    privileged: true,
+
+    // Sign with the platform key so the app is trusted by the system
+    certificate: "platform",
+
+    srcs: ["src/main/kotlin/**/*.kt"],
+
+    resource_dirs: ["src/main/res"],
+
+    manifest: "AndroidManifest.xml",
+
+    static_libs: [
+        // OEM manager and AIDL stubs
+        "thermalcontrol-manager",
+        "thermalcontrolservice-aidl-V1-java",
+
+        // Kotlin + Coroutines
+        "kotlin-stdlib",
+        "kotlinx-coroutines-android",
+
+        // AndroidX + Compose
+        "androidx.core_core-ktx",
+        "androidx.activity_activity-compose",
+        "androidx.compose.runtime_runtime",
+        "androidx.compose.ui_ui",
+        "androidx.compose.foundation_foundation",
+        "androidx.compose.material3_material3",
+        "androidx.lifecycle_lifecycle-viewmodel-ktx",
+        "androidx.lifecycle_lifecycle-viewmodel-compose",
+        "androidx.lifecycle_lifecycle-runtime-compose",
+    ],
+
+    optimize: {
+        enabled: false,
+    },
+}
