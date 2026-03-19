@@ -1,0 +1,39 @@
+// Copyright (C) 2024 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VTS test binary for BMIService
+//
+// Test type : VTS (Vendor Test Suite)
+// Why VTS?  : BMIService is a vendor C++ binder service with @hide AIDL.
+//             VTS runs with system privileges, required to reach vendor services.
+//
+// Build     : m VtsBMIServiceTest
+// Run       : atest VtsBMIServiceTest
+// ─────────────────────────────────────────────────────────────────────────────
+
+cc_test {
+    name: "VtsBMIServiceTest",
+
+    vendor: true,
+
+    srcs: ["VtsBMIServiceTest.cpp"],
+
+    shared_libs: [
+        "libbinder_ndk",
+        "liblog",
+    ],
+
+    static_libs: [
+        // NDK backend stubs generated from IBMIService.aidl
+        "bmiservice-aidl-ndk",
+    ],
+
+    test_suites: ["vts"],
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}

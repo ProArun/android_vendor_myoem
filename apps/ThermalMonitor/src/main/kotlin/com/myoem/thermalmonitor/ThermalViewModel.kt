@@ -28,10 +28,11 @@ data class UiState(
     val errorMessage: String? = null
 )
 
-class ThermalViewModel(private val manager: ThermalControlManager) : ViewModel() {
+// open — allows FakeThermalViewModel in tests to subclass without mockito-inline
+open class ThermalViewModel(private val manager: ThermalControlManager) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
-    val uiState: StateFlow<UiState> = _uiState.asStateFlow()
+    open val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     init {
         // Start auto-refresh loop: polls every 2 seconds on the IO dispatcher
@@ -61,28 +62,28 @@ class ThermalViewModel(private val manager: ThermalControlManager) : ViewModel()
         }
     }
 
-    fun turnFanOn() {
+    open fun turnFanOn() {
         viewModelScope.launch(Dispatchers.IO) {
             manager.setFanEnabled(true)
             fetchData()
         }
     }
 
-    fun turnFanOff() {
+    open fun turnFanOff() {
         viewModelScope.launch(Dispatchers.IO) {
             manager.setFanEnabled(false)
             fetchData()
         }
     }
 
-    fun setFanSpeed(percent: Int) {
+    open fun setFanSpeed(percent: Int) {
         viewModelScope.launch(Dispatchers.IO) {
             manager.setFanSpeed(percent)
             fetchData()
         }
     }
 
-    fun setAutoMode() {
+    open fun setAutoMode() {
         viewModelScope.launch(Dispatchers.IO) {
             manager.setFanAutoMode(true)
             fetchData()

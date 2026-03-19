@@ -1,0 +1,40 @@
+// Copyright (C) 2024 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VTS test binary for libthermalcontrolhal
+//
+// Test type : VTS — tests the HAL layer in isolation
+// Why test the HAL separately from the service?
+//   - Catches sysfs access bugs before they surface as service-layer errors
+//   - Verifies PWM math (percent → PWM mapping) independently
+//   - Confirms graceful fallback when hwmon sysfs is absent
+//   - Faster feedback loop during HAL development
+//
+// Build     : m VtsThermalControlHalTest
+// Run       : atest VtsThermalControlHalTest
+// ─────────────────────────────────────────────────────────────────────────────
+
+cc_test {
+    name: "VtsThermalControlHalTest",
+
+    vendor: true,
+
+    srcs: ["VtsThermalControlHalTest.cpp"],
+
+    // libthermalcontrolhal exports its public interface header via
+    // export_include_dirs: ["include"] in its Android.bp.
+    // We link against it so we can call createThermalControlHal().
+    shared_libs: [
+        "libthermalcontrolhal",
+        "liblog",
+    ],
+
+    test_suites: ["vts", "general-tests"],
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}
