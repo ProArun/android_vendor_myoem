@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AndroidManifest.xml for MyOemThermalControlManagerTests
+
+    Every android_test module requires a manifest. This one is minimal:
+      - package         : unique APK package name for the test runner
+      - instrumentation : tells the runner which class drives the tests
+                          (AndroidJUnitRunner handles all JUnit4 @Test methods)
+
+    The <uses-sdk> min/target versions must be compatible with the AOSP branch
+    (android-15 = API 35).  Setting targetSdkVersion to 35 is required so the
+    test runner gets the correct runtime behaviour on the device.
+-->
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.myoem.thermalcontrol.test">
+
+    <uses-sdk
+        android:minSdkVersion="21"
+        android:targetSdkVersion="35" />
+
+    <!--
+        instrumentation block:
+          android:name            — the test runner class
+          android:targetPackage   — must match this manifest's own package when
+                                    the test APK is self-contained (no separate
+                                    app under test)
+    -->
+    <instrumentation
+        android:name="androidx.test.runner.AndroidJUnitRunner"
+        android:targetPackage="com.myoem.thermalcontrol.test"
+        android:label="ThermalControlManager Tests" />
+
+    <application android:label="ThermalControlManager Tests" />
+
+</manifest>

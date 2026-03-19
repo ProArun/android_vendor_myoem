@@ -1,0 +1,44 @@
+// Copyright (C) 2024 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VTS test binary for CalculatorService
+//
+// Test type : VTS (Vendor Test Suite)
+// Why VTS?  : CalculatorService is a vendor C++ binder service. VTS runs with
+//             system privileges and can reach vendor services via /dev/binder.
+//
+// Build     : m VtsCalculatorServiceTest
+// Run       : atest VtsCalculatorServiceTest
+// ─────────────────────────────────────────────────────────────────────────────
+
+cc_test {
+    name: "VtsCalculatorServiceTest",
+
+    // vendor:true — the test binary lives on the vendor partition so it can
+    // share the same binder domain as calculatord.
+    vendor: true,
+
+    srcs: ["VtsCalculatorServiceTest.cpp"],
+
+    shared_libs: [
+        "libbinder_ndk",   // LLNDK — uses /dev/binder, works across partitions
+        "liblog",          // ALOGD / ALOGE for test diagnostics
+    ],
+
+    static_libs: [
+        // NDK backend stubs generated from ICalculatorService.aidl.
+        // "unstable" interface → no version suffix.
+        "calculatorservice-aidl-ndk",
+    ],
+
+    // Register this binary with the VTS suite so `atest` and the VTS
+    // harness can discover and run it automatically.
+    test_suites: ["vts"],
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}

@@ -8,22 +8,25 @@ soong_namespace {
     ],
 }
 
-android_app {
-    name: "ThermalMonitor",
-
-    // platform_apis:true is required to call ServiceManager.checkService() (@hide API)
-    platform_apis: true,
-
-    // Install to /system/priv-app/ — needed for a privileged platform app
-    privileged: true,
-
-    // Sign with the platform key so the app is trusted by the system
-    certificate: "platform",
+// ─────────────────────────────────────────────────────────────────────────────
+// ThermalMonitorLib — production sources compiled as a reusable library
+//
+// Why a separate library?
+//   AOSP does not have Gradle's "test sourceSet inherits main" concept.
+//   By splitting production code into android_library, both test modules can
+//   declare "ThermalMonitorLib" as a static_lib dependency and get all the
+//   production classes + the R class (generated under com.myoem.thermalmonitor)
+//   without re-compiling sources or creating R-class package conflicts.
+// ─────────────────────────────────────────────────────────────────────────────
+android_library {
+    name: "ThermalMonitorLib",
 
     srcs: ["src/main/kotlin/**/*.kt"],
 
     resource_dirs: ["src/main/res"],
 
+    // Use the app manifest so the R class is generated under
+    // package="com.myoem.thermalmonitor" (matching import in Kotlin sources)
     manifest: "AndroidManifest.xml",
 
     static_libs: [
@@ -47,7 +50,121 @@ android_app {
         "androidx.lifecycle_lifecycle-runtime-compose",
     ],
 
+    // platform_apis:true — needed for ServiceManager.checkService() (@hide)
+    platform_apis: true,
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ThermalMonitor — the production application APK
+//
+// Depends entirely on ThermalMonitorLib; this module just wires up the manifest,
+// signing key, and install path.
+//
+// Build : m ThermalMonitor
+// ─────────────────────────────────────────────────────────────────────────────
+android_app {
+    name: "ThermalMonitor",
+
+    // platform_apis:true is required to call ServiceManager.checkService (@hide)
+    platform_apis: true,
+
+    // Install to /system/priv-app/ — needed for a privileged platform app
+    privileged: true,
+
+    // Sign with the platform key so the app is trusted by the system
+    certificate: "platform",
+
+    manifest: "AndroidManifest.xml",
+
+    static_libs: ["ThermalMonitorLib"],
+
     optimize: {
         enabled: false,
     },
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ThermalMonitorUnitTests — ViewModel tests (run on device)
+//
+// Despite being called "unit tests" (isolated, Mockito-controlled), these must
+// be android_test because ThermalControlManager depends on android.os.IBinder
+// which is unavailable on the host JVM.
+//
+// ThermalMonitorLib provides all production classes + R class under the correct
+// package, so no resource_dirs or production srcs are needed here.
+//
+// Build : m ThermalMonitorUnitTests
+// Run   : atest ThermalMonitorUnitTests
+// ─────────────────────────────────────────────────────────────────────────────
+android_test {
+    name: "ThermalMonitorUnitTests",
+
+    vendor: true,
+
+    manifest: "src/test/AndroidManifest.xml",
+
+    srcs: ["src/test/kotlin/**/*.kt"],
+
+    static_libs: [
+        // Production code under test (includes R class + all Compose deps)
+        "ThermalMonitorLib",
+
+        // Coroutines test utilities — StandardTestDispatcher, advanceTimeBy
+        "kotlinx_coroutines_test",
+
+        // Mockito for Android (dexmaker-based, not mockito-core)
+        "mockito-target",
+
+        // Test runners
+        "junit",
+        "androidx.test.runner",
+        "androidx.test.ext.junit",
+    ],
+
+    platform_apis: true,
+
+    test_suites: ["general-tests"],
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ThermalMonitorInstrumentedTests — Compose UI tests (run on device)
+//
+// These inflate the real Compose UI via ComposeTestRule, interact with nodes
+// by text/semantics, and verify screen behaviour.  They require an Android
+// runtime because Compose can only render inside an Activity.
+//
+// Build : m ThermalMonitorInstrumentedTests
+// Run   : atest ThermalMonitorInstrumentedTests
+// ─────────────────────────────────────────────────────────────────────────────
+android_test {
+    name: "ThermalMonitorInstrumentedTests",
+
+    vendor: true,
+
+    manifest: "src/androidTest/AndroidManifest.xml",
+
+    srcs: ["src/androidTest/kotlin/**/*.kt"],
+
+    static_libs: [
+        // Production code under test (includes ThermalScreen, ThermalViewModel, UiState)
+        "ThermalMonitorLib",
+
+        // Mockito for Android (used in FakeThermalViewModel for ThermalControlManager)
+        "mockito-target",
+
+        // Test runners
+        "junit",
+        "androidx.test.runner",
+        "androidx.test.ext.junit",
+
+        // Compose UI test libraries:
+        //   ui-test-junit4   — createComposeRule(), onNodeWithText(), performClick()
+        //   ui-test-manifest — required <activity> entry so ComposeTestRule can start
+        "androidx.compose.ui_ui-test-junit4",
+        "androidx.compose.ui_ui-test-manifest",
+    ],
+
+    platform_apis: true,
+
+    test_suites: ["general-tests"],
 }

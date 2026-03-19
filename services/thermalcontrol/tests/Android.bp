@@ -1,0 +1,52 @@
+// Copyright (C) 2024 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VTS test binary for ThermalControlService
+//
+// Test type : VTS — MANDATORY
+// Why mandatory?
+//   The AIDL interface is annotated @VintfStability, which means it is part
+//   of the Vendor Interface (VINTF) contract defined by Android Treble.
+//   Google requires that every @VintfStability interface has VTS coverage.
+//   Without passing VTS tests, the device cannot claim Treble compliance.
+//
+// Build     : m VtsThermalControlServiceTest
+// Run       : atest VtsThermalControlServiceTest
+// ─────────────────────────────────────────────────────────────────────────────
+
+cc_test {
+    name: "VtsThermalControlServiceTest",
+
+    vendor: true,
+
+    srcs: ["VtsThermalControlServiceTest.cpp"],
+
+    // Import the service namespace so Soong can find thermalcontrolservice-aidl-V1-ndk
+    // (the VINTF-stabilised version has an explicit V1 suffix)
+    defaults: [],
+    compile_multilib: "64",
+
+    shared_libs: [
+        "libbinder_ndk",
+        "liblog",
+    ],
+
+    static_libs: [
+        // V1 suffix is required — stability:"vintf" interfaces are versioned.
+        // "unstable:true" would be incompatible with vintf stability.
+        "thermalcontrolservice-aidl-V1-ndk",
+    ],
+
+    test_suites: [
+        "vts",
+        // Also register with general-tests so it shows up in atest by name
+        "general-tests",
+    ],
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}

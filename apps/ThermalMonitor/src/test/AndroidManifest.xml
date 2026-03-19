@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AndroidManifest.xml for ThermalMonitorUnitTests
+
+    Minimal manifest for the ViewModel unit-style tests.
+    The package name is unique so it does not conflict with the app APK or
+    the instrumented test APK when both are installed on the device.
+
+    android:targetPackage must match this manifest's own package because the
+    test APK is self-contained (it does not instrument a separate app APK).
+-->
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.myoem.thermalmonitor.test.unit">
+
+    <uses-sdk
+        android:minSdkVersion="21"
+        android:targetSdkVersion="35" />
+
+    <instrumentation
+        android:name="androidx.test.runner.AndroidJUnitRunner"
+        android:targetPackage="com.myoem.thermalmonitor.test.unit"
+        android:label="ThermalMonitor Unit Tests" />
+
+    <application
+        android:label="ThermalMonitor Unit Tests"
+        tools:replace="android:label" />
+
+</manifest>

@@ -1,0 +1,64 @@
+// Copyright (C) 2024 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Instrumented test APK for ThermalControlManager
+//
+// Test type : general-tests  (NOT CTS)
+//
+// Why NOT CTS?
+//   CTS modules are strictly forbidden from using platform_apis:true because
+//   they must not depend on hidden framework internals (the build enforces this).
+//   Our live-service test cases call ServiceManager.checkService() which is a
+//   @hide API — so this module must use platform_apis:true and therefore cannot
+//   be registered in "cts".
+//
+//   Rule to remember:
+//     platform_apis:true  →  test_suites:["general-tests"]  (vendor OEM tests)
+//     sdk_version:"..."   →  test_suites:["cts"]            (public-API-only tests)
+//
+// Build     : m MyOemThermalControlManagerTests
+// Run       : atest MyOemThermalControlManagerTests
+// ─────────────────────────────────────────────────────────────────────────────
+
+android_test {
+    name: "MyOemThermalControlManagerTests",
+
+    // vendor:true — test lives on the vendor partition alongside the service
+    vendor: true,
+
+    // Explicit manifest path — android_test requires an AndroidManifest.xml.
+    // Without it Soong panics with a nil-pointer in Certificate.AndroidMkString.
+    manifest: "AndroidManifest.xml",
+
+    srcs: ["java/**/*.java"],
+
+    libs: [
+        // The library under test
+        "thermalcontrol-manager",
+        // AIDL Java stubs — needed for live-service test cases
+        "thermalcontrolservice-aidl-V1-java",
+    ],
+
+    // Test framework libraries bundled into the APK.
+    // These must be static_libs (not libs) so they are physically present
+    // inside the installed APK on the device.
+    //
+    //   junit                   → org.junit.Test / Assert / Assume
+    //   androidx.test.runner    → AndroidJUnitRunner (the instrumentation runner)
+    //   androidx.test.ext.junit → @RunWith(AndroidJUnit4.class)
+    static_libs: [
+        "junit",
+        "androidx.test.runner",
+        "androidx.test.ext.junit",
+    ],
+
+    // platform_apis:true is required to call ServiceManager.checkService (@hide)
+    // in the live test cases (Group F).
+    // This is what prevents this module from being in "cts".
+    platform_apis: true,
+
+    // general-tests: picked up by atest and the Android test harness,
+    // but not subject to the strict CTS "no platform APIs" rule.
+    test_suites: ["general-tests"],
+}

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AndroidManifest.xml for ThermalMonitorInstrumentedTests
+
+    Manifest for the Compose UI instrumented tests.
+
+    The package name is distinct from both the app (com.myoem.thermalmonitor)
+    and the unit-test APK so all three can coexist on the device.
+
+    android:targetPackage must match this manifest's own package because
+    ThermalScreenTest uses createComposeRule() which starts its own minimal
+    Activity inside this test APK — it does NOT instrument the production APK.
+-->
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.myoem.thermalmonitor.test.ui">
+
+    <uses-sdk
+        android:minSdkVersion="21"
+        android:targetSdkVersion="35" />
+
+    <instrumentation
+        android:name="androidx.test.runner.AndroidJUnitRunner"
+        android:targetPackage="com.myoem.thermalmonitor.test.ui"
+        android:label="ThermalMonitor UI Tests" />
+
+    <application
+        android:label="ThermalMonitor UI Tests"
+        tools:replace="android:label" />
+
+</manifest>
