@@ -1,0 +1,33 @@
+# Fuel level values in millilitres (raw VHAL FUEL_LEVEL format)
+# PROP_ID: 0x45100004  TYPE: FLOAT  AREA: 0 (global)
+#
+# Conversion reference:
+#   1 litre = 1000 ml
+#   Typical tank: 50 litres = 50000 ml
+#   Low fuel warning: ~5 litres = 5000 ml
+#
+# This sequence simulates a tank gradually draining over a journey:
+#   Values 1-5:   Full tank (50L → 45L)
+#   Values 6-10:  Mid journey (40L → 25L)
+#   Values 11-15: Low fuel zone (20L → 8L)
+#   Values 16-20: Critical fuel (6L → 1L)  ← tests edge-case handling in library
+50000.0
+48500.0
+47000.0
+45800.0
+44500.0
+42000.0
+38500.0
+34000.0
+29500.0
+25000.0
+20000.0
+16000.0
+12500.0
+9800.0
+7500.0
+6000.0
+4500.0
+3000.0
+1800.0
+800.0

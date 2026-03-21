@@ -1,0 +1,33 @@
+# Vehicle speed values in m/s (raw VHAL PERF_VEHICLE_SPEED format)
+# PROP_ID: 0x11600207  TYPE: FLOAT  AREA: 0 (global)
+#
+# SafeModeState thresholds:
+#   < 1.39 m/s  (< 5 km/h)  → NO_SAFE_MODE
+#   1.39–4.17   (5–15 km/h) → NORMAL_SAFE_MODE
+#   > 4.17 m/s  (> 15 km/h) → HARD_SAFE_MODE
+#
+# This sequence exercises all three zones:
+#   Values 1-5:  stationary / crawl (NO_SAFE_MODE)
+#   Values 6-10: urban slow (NORMAL_SAFE_MODE boundary)
+#   Values 11-15: urban normal (NORMAL_SAFE_MODE)
+#   Values 16-20: highway entry (HARD_SAFE_MODE)
+0.0
+0.5
+1.0
+1.3
+1.38
+1.4
+2.0
+2.8
+3.5
+4.1
+4.2
+5.0
+6.5
+8.3
+11.1
+13.9
+16.7
+19.4
+22.2
+27.8

@@ -1,0 +1,32 @@
+# Copyright (C) 2025 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+#
+# safemoded.rc — init service descriptor for SafeModeService.
+#
+# This file is installed to /vendor/etc/init/safemoded.rc by the build system
+# (via init_rc in Android.bp). Android's init process reads all *.rc files in
+# /vendor/etc/init/ at boot time.
+#
+# ── How init starts this service ─────────────────────────────────────────────
+# "class main" means the service belongs to the "main" service class.
+# init starts all "main" class services automatically when the system reaches
+# the "class_start main" trigger in the global init.rc (which happens during
+# normal boot). No manual "start" command needed in init.rc for class=main.
+#
+# ── user system / group system ────────────────────────────────────────────────
+# The service runs as the "system" UID (uid 1000).
+# This is the standard UID for platform services that need to:
+#   - Register with ServiceManager
+#   - Communicate with VHAL (via Binder IPC)
+# Running as "root" is intentionally avoided — principle of least privilege.
+#
+# ── No chown/chmod needed (unlike ThermalControl) ────────────────────────────
+# SafeModeService reads VHAL via Binder IPC — it does NOT access sysfs directly.
+# Therefore no filesystem permission setup is needed in this RC file.
+# (Contrast with thermalcontrold.rc which needs chown on hwmon sysfs files.)
+#
+
+service safemoded /vendor/bin/safemoded
+    class main
+    user system
+    group system

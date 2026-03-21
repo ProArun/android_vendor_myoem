@@ -1,0 +1,29 @@
+# Gear position values (VehicleGear bitmask integers)
+# Constants (from android.hardware.automotive.vehicle.VehicleGear):
+#   1 = NEUTRAL   2 = REVERSE   4 = PARK   8 = DRIVE
+#  16 = GEAR_1   32 = GEAR_2   64 = GEAR_3
+#
+# Sequence mirrors the speed data — a realistic drive cycle:
+#   Park → Neutral → Reverse (backing out) → Neutral → Drive (accelerating) →
+#   (driving) → Neutral → Park
+#
+4
+4
+1
+2
+2
+1
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+1
+4
+4
