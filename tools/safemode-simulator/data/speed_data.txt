@@ -1,0 +1,32 @@
+# Vehicle speed values in metres per second (m/s)
+# SafeModeState thresholds:
+#   NO_SAFE_MODE:     speed < 1.389 m/s  (< 5 km/h)
+#   NORMAL_SAFE_MODE: 1.389 – 4.167 m/s  (5 – 15 km/h)
+#   HARD_SAFE_MODE:   speed > 4.167 m/s  (> 15 km/h)
+#
+# This sequence simulates a full drive cycle:
+#   steps 1–4:  stationary / very slow (NO_SAFE_MODE)
+#   steps 5–8:  urban speed (NORMAL_SAFE_MODE)
+#   steps 9–15: highway speed (HARD_SAFE_MODE)
+#   steps 16–20: slowing down back to stop
+#
+0.00
+0.50
+1.00
+1.39
+2.00
+2.78
+3.50
+4.17
+5.00
+6.94
+8.33
+9.72
+11.11
+12.50
+13.89
+11.11
+8.33
+5.56
+2.78
+0.00

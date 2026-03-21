@@ -1,0 +1,27 @@
+<manifest version="1.0" type="device">
+    <!--
+        VINTF manifest fragment for the SafeMode service.
+
+        This declares com.myoem.safemode.ISafeModeService to the Android
+        VINTF framework, enabling cross-partition (vendor → system) Binder
+        stability. Without this declaration, AServiceManager_addService()
+        rejects the VINTF-stable binder because it is not in the manifest.
+
+        Format:
+          <name>    — AIDL package name
+          <version> — HAL version (1 for our initial release)
+          <fqname>  — InterfaceName/instance
+                      must match the registered service name suffix:
+                      "com.myoem.safemode.ISafeModeService/default"
+
+        The full service name used in ServiceManager:
+          com.myoem.safemode.ISafeModeService/default
+          ─────────────────────────── ──────────────── ─────────
+          <name>.<fqname prefix>       <fqname suffix>  /instance
+    -->
+    <hal format="aidl">
+        <name>com.myoem.safemode</name>
+        <version>1</version>
+        <fqname>ISafeModeService/default</fqname>
+    </hal>
+</manifest>

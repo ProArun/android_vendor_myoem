@@ -1,0 +1,18 @@
+# Copyright (C) 2025 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+#
+# service_contexts — maps ServiceManager service names to SELinux labels.
+#
+# Format:  <service_name>    <selinux_label>
+#
+# When safemoded calls AServiceManager_addService("com.myoem.safemode.ISafeModeService", ...),
+# the ServiceManager looks up this file to assign the SELinux label.
+#
+# When a client calls ServiceManager.getService("com.myoem.safemode.ISafeModeService"),
+# SELinux checks that the caller's domain has "find_service(safemoded_service)" permission.
+#
+# The service name here MUST match EXACTLY:
+#   - kServiceName in main.cpp
+#   - The name used in SafeModeManager.kt (safemode_library)
+#
+com.myoem.safemode.ISafeModeService/default    u:object_r:safemoded_service:s0

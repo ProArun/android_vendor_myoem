@@ -1,0 +1,83 @@
+# Copyright (C) 2025 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+#
+# safemoded.te — Type Enforcement policy for the safemoded service.
+#
+# SELinux operates on the principle of least privilege: deny everything by
+# default, then explicitly allow only what is needed. This file defines ONLY
+# the permissions safemoded actually requires.
+#
+# ── Type declarations ─────────────────────────────────────────────────────────
+# type <name>, <attributes>
+#
+# "safemoded" is the domain (process label) that safemoded runs in.
+# Every process in Android has a domain. The domain is assigned when init
+# launches the process, based on the exec label defined in file_contexts.
+#
+# "safemoded_exec" is the file label for /vendor/bin/safemoded.
+# exec_type       → the file is an executable (can be execve'd)
+# vendor_file_type → the file lives in the vendor partition
+# file_type       → generic file type attribute
+type safemoded,      domain;
+type safemoded_exec, exec_type, vendor_file_type, file_type;
+
+# ── Domain transition ──────────────────────────────────────────────────────────
+# init_daemon_domain(safemoded) is a macro that:
+#   1. Allows init to execute /vendor/bin/safemoded (domain transition from
+#      u:r:init:s0 → u:r:safemoded:s0).
+#   2. Grants basic permissions that every daemon needs (reading /proc, etc.).
+#
+# Without this, init would log:
+#   "Could not start service: File has incorrect label or no domain transition"
+init_daemon_domain(safemoded)
+
+# ── Binder IPC permissions ─────────────────────────────────────────────────────
+# binder_use(safemoded) — allows safemoded to:
+#   - Open /dev/binder (the Binder kernel device)
+#   - Make and receive Binder transactions
+#   Required for ANY process that uses Binder IPC.
+#
+# binder_service(safemoded) — allows safemoded to:
+#   - Add itself to the ServiceManager
+#   - Receive Binder calls from other processes
+#   Required for server-side processes (not just clients).
+binder_use(safemoded)
+binder_service(safemoded)
+
+# ── ServiceManager registration ────────────────────────────────────────────────
+# add_service(safemoded, safemoded_service) — allows safemoded to call:
+#   AServiceManager_addService(..., "com.myoem.safemode.ISafeModeService")
+# The label "safemoded_service" is defined in service.te (below).
+add_service(safemoded, safemoded_service)
+
+# ── VHAL access ────────────────────────────────────────────────────────────────
+# safemoded calls IVehicle::subscribe() and IVehicle::getValues() on the VHAL
+# service. binder_call() grants permission to make Binder transactions into
+# the VHAL server's domain.
+#
+# hal_vehicle_server is an SELinux attribute assigned to hal_vehicle_default
+# (the VHAL process domain) via hal_server_domain() in:
+#   system/sepolicy/vendor/hal_vehicle_default.te
+# The attribute name is hal_vehicle_server — NOT hal_automotive_vehicle_server
+# (that name does not exist in this AOSP build's policy).
+#
+# If you see "avc: denied" for safemoded → VHAL after flashing:
+#   adb logcat -d | grep "avc: denied" | grep safemoded
+# The tcontext field will show the exact domain to use here.
+binder_call(safemoded, hal_vehicle_server)
+
+# ── Logging ────────────────────────────────────────────────────────────────────
+# In AOSP 15 (Android 14+), the old /dev/log/* character device and its
+# SELinux type "log_device" no longer exist. Logging now goes through the
+# logd daemon via a Unix socket. The necessary socket permissions are already
+# included in the init_daemon_domain(safemoded) macro above — no explicit
+# logging rule is needed here.
+#
+# Older pattern (pre-Android 13, DO NOT USE on AOSP 15):
+#   allow safemoded log_device:chr_file rw_file_perms;  ← "log_device" unknown type
+
+# ── Allow reading /proc/self ────────────────────────────────────────────────────
+# Some Binder internals (e.g., reading thread PID for death notification)
+# access /proc/self. This is granted by init_daemon_domain but listed here
+# for documentation.
+# (Already included in init_daemon_domain — no explicit rule needed.)

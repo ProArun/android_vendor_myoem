@@ -1,0 +1,187 @@
+// Copyright (C) 2025 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+// soong_namespace is REQUIRED for every module under vendor/myoem/.
+// It isolates this directory's module names from colliding with AOSP modules.
+// Listed in myoem_base.mk under PRODUCT_SOONG_NAMESPACES.
+soong_namespace {
+}
+
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AIDL Interface Library
+//
+// Generates NDK and Java stubs from our 3 AIDL files:
+//   VehicleData.aidl           — Parcelable data bundle
+//   ISafeModeCallback.aidl     — oneway callback from service → client
+//   ISafeModeService.aidl      — main service interface
+//
+// Generated library names (used in static_libs below):
+//   safemodeservice-aidl-V1-ndk   — C++ NDK stubs (for safemoded and safemode_client)
+//   safemodeservice-aidl-V1-java  — Java stubs (for safemode_library AAR)
+//
+// WHY stability:"vintf" instead of unstable:true?
+//   cc_binary { vendor: true } compiles with -D__ANDROID_VENDOR__, causing all
+//   binder objects to get VENDOR stability. System processes (Java app) cannot
+//   call VENDOR-stability binders — libbinder rejects with BAD_TYPE.
+//
+//   stability:"vintf" tells the AIDL compiler to emit AIBinder_markVintfStability()
+//   calls at class-registration time (before markCompilationUnit sets VENDOR).
+//   This upgrades the service to VINTF stability (cross-partition level), so
+//   system apps can call it. The runtime AIBinder_markVintfStability() call in
+//   main.cpp is NOT needed and would cause a FATAL crash (already-marked).
+//
+// WHY NDK backend for safemoded, NOT cpp backend?
+//   libbinder_ndk is LLNDK — it lives only in /system/lib64/ and uses the
+//   SYSTEM libbinder.so internally (kHeader='SYST'), matching Java clients.
+//   cpp backend uses vendor libbinder.so (kHeader='VNDR') → incompatible.
+// ─────────────────────────────────────────────────────────────────────────────
+aidl_interface {
+    name: "safemodeservice-aidl",
+    owner: "myoem",
+    vendor_available: true,   // Stubs can be used by vendor AND system modules
+    stability: "vintf",       // Cross-partition: allows system apps to call vendor service.
+                              // AIDL compiler emits AIBinder_markVintfStability() at
+                              // class-registration time — no manual call needed in main.cpp.
+    srcs: [
+        "aidl/com/myoem/safemode/VehicleData.aidl",
+        "aidl/com/myoem/safemode/ISafeModeCallback.aidl",
+        "aidl/com/myoem/safemode/ISafeModeService.aidl",
+    ],
+    local_include_dir: "aidl",
+    versions_with_info: [
+        {
+            version: "1",
+            imports: [],
+        },
+    ],
+    backend: {
+        cpp: {
+            enabled: false,   // NOT used — vendor cpp libbinder uses kHeader='VNDR',
+                              // incompatible with Java clients (kHeader='SYST')
+        },
+        java: {
+            enabled: true,    // Java stubs for safemode_library (the Android AAR)
+        },
+        ndk: {
+            enabled: true,    // NDK stubs for safemoded and safemode_client
+                              // libbinder_ndk is LLNDK (system-only) → kHeader='SYST'
+                              // → compatible with Java clients
+        },
+        rust: {
+            enabled: false,
+        },
+    },
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SafeMode Service Binary
+//
+// Installed to: /vendor/bin/safemoded
+// RC file installed to: /vendor/etc/init/safemoded.rc (by init_rc)
+//
+// This binary:
+//   1. Connects to VHAL (IVehicle/default) at startup
+//   2. Subscribes to PERF_VEHICLE_SPEED, CURRENT_GEAR, FUEL_LEVEL
+//   3. On every VHAL event → updates mCurrentData → notifies all callbacks
+//   4. Registers itself with ServiceManager under "com.myoem.safemode.ISafeModeService"
+//   5. Blocks on ABinderProcess_joinThreadPool() serving client requests
+//
+// Key shared_libs:
+//   libbinder_ndk          — NDK Binder (LLNDK, system-only).
+//                            Used for both our service interface AND VHAL access.
+//                            libbinder_ndk links against system libbinder.so
+//                            (kHeader='SYST') — compatible with Java clients.
+//   liblog                 — ALOGI / ALOGE / ALOGD macros
+//   android.hardware.automotive.vehicle-V3-ndk
+//                          — Direct VHAL AIDL stubs (vendor→HAL communication)
+//
+// Key static_libs:
+//   safemodeservice-aidl-V1-ndk
+//                          — Our own AIDL stubs — NDK backend, version 1
+//                            (versioned because stability:"vintf" requires frozen API)
+// ─────────────────────────────────────────────────────────────────────────────
+cc_binary {
+    name: "safemoded",
+    vendor: true,             // Installed to /vendor partition
+    init_rc: ["safemoded.rc"],
+
+    srcs: [
+        "src/SafeModeService.cpp",
+        "src/main.cpp",
+    ],
+
+    local_include_dirs: ["include"],
+
+    shared_libs: [
+        "libbinder_ndk",      // NDK Binder — LLNDK, system-only, kHeader='SYST'
+                              // Used for both our service interface AND VHAL access
+        "liblog",
+        // VHAL AIDL NDK stubs — version 3 (AOSP 14/15)
+        // Allows us to call IVehicle::subscribe() and IVehicle::getValues()
+        "android.hardware.automotive.vehicle-V3-ndk",
+    ],
+
+    static_libs: [
+        // Our AIDL stubs — NDK backend, V1 (versioned by stability:"vintf")
+        "safemodeservice-aidl-V1-ndk",
+    ],
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        // ── RPi5 dev mode: read data from Python simulator scripts ────────────
+        // Remove this flag for production to use real VHAL subscription instead.
+        // See: vendor/myoem/tools/safemode-simulator/simulate_all.py
+        "-DSAFEMODE_SIM_MODE",
+    ],
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VINTF Manifest Fragment
+//
+// Declares com.myoem.safemode.ISafeModeService to the VINTF framework.
+// Required so that AIBinder_markVintfStability() + AServiceManager_addService()
+// succeeds: the ServiceManager checks that VINTF-stable services are declared
+// in the device manifest before allowing registration.
+//
+// Installed to: /vendor/etc/vintf/manifest/com.myoem.safemode.xml
+// ─────────────────────────────────────────────────────────────────────────────
+vintf_fragment {
+    name: "com.myoem.safemode-service",
+    src: "vintf/manifest.xml",
+    vendor: true,
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CLI Test Client
+//
+// Installed to: /vendor/bin/safemode_client
+// Used for Phase 1 verification — calls getCurrentData() and prints results.
+// Run on device: adb shell /vendor/bin/safemode_client
+// ─────────────────────────────────────────────────────────────────────────────
+cc_binary {
+    name: "safemode_client",
+    vendor: true,
+
+    srcs: ["test/safemode_client.cpp"],
+
+    shared_libs: [
+        "libbinder_ndk",
+        "liblog",
+    ],
+
+    static_libs: [
+        "safemodeservice-aidl-V1-ndk",
+    ],
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}
