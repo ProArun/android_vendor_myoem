@@ -1,0 +1,38 @@
+# potvolumed.te — SELinux Type Enforcement policy for potvolumed.
+#
+# VERIFIED device labels on RPi5 AOSP 15 (adb shell ls -laZ):
+#   /dev/spidev10.0 → u:object_r:device:s0   (generic — we define our own type)
+#   /dev/uinput     → u:object_r:uhid_device:s0
+#   /dev/log*       → does not exist (logging via logd socket only)
+
+# ── Type declarations ─────────────────────────────────────────────────────────
+
+type potvolumed,      domain;
+type potvolumed_exec, exec_type, vendor_file_type, file_type;
+
+# spidev_device: our own type for the SPI character device.
+# AOSP 15 base policy does NOT define spidev_device — we define it here.
+# The matching file_contexts entry labels /dev/spidev* with this type at boot.
+type spidev_device, dev_type;
+
+# ── Domain transition ─────────────────────────────────────────────────────────
+# Allows init to exec /vendor/bin/potvolumed and transition into potvolumed domain.
+init_daemon_domain(potvolumed)
+
+# ── SPI device access ─────────────────────────────────────────────────────────
+# /dev/spidev10.0 — SPI character device for MCP3008 ADC communication.
+# Labeled spidev_device via our file_contexts entry (see file_contexts).
+# Needs: open (access the fd), read/write (ioctl uses both internally),
+#        ioctl (SPI_IOC_MESSAGE — the actual transaction call).
+allow potvolumed spidev_device:chr_file { open read write ioctl };
+
+# ── uinput device access ──────────────────────────────────────────────────────
+# /dev/uinput — verified label on this device: uhid_device (NOT uinput_device).
+# AOSP 15 labels both /dev/uhid and /dev/uinput with the uhid_device type.
+# Needs: open, write (input_event structs), ioctl (UI_SET_EVBIT, UI_DEV_CREATE).
+allow potvolumed uhid_device:chr_file { open read write ioctl };
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+# ALOGI/ALOGE send log records to logd via a Unix datagram socket.
+# /dev/log* files do not exist on AOSP 15 — all logging is socket-based.
+allow potvolumed logd:unix_dgram_socket sendto;

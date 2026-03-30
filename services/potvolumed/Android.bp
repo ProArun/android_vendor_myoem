@@ -1,0 +1,55 @@
+// Copyright (C) 2024 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+soong_namespace {}
+
+// ── Potentiometer Volume Daemon ───────────────────────────────────────────────
+//
+// potvolumed reads the MCP3008 SPI ADC and injects KEY_VOLUMEUP /
+// KEY_VOLUMEDOWN key events via a uinput virtual input device.
+//
+// NOTE: libaudioclient was the original plan but it has no image:vendor variant
+// in AOSP 15 (system-only library). uinput is the correct vendor-accessible
+// approach: no system libraries needed, no VNDK/LLNDK issues.
+//
+// Hardware path:
+//   Potentiometer → MCP3008 → /dev/spidev0.0 → daemon
+//                                                 ↓
+//                                           /dev/uinput
+//                                                 ↓
+//                                   Android InputReader
+//                                                 ↓
+//                                   PhoneWindowManager
+//                                                 ↓
+//                                   AudioManager (STREAM_MUSIC)
+
+cc_binary {
+    name: "potvolumed",
+    vendor: true,
+    init_rc: ["potvolumed.rc"],
+
+    srcs: [
+        "src/main.cpp",
+        "src/SpiReader.cpp",
+        "src/AdcFilter.cpp",
+        "src/VolumeMapper.cpp",
+        "src/VolumeController.cpp",
+    ],
+
+    local_include_dirs: ["src"],
+
+    shared_libs: [
+        // liblog: ALOGI, ALOGE macros → logcat
+        // This is the only non-kernel shared library we need.
+        // All other functionality uses Linux kernel headers only:
+        //   <linux/spi/spidev.h> for SPI
+        //   <linux/uinput.h> + <linux/input.h> for uinput
+        "liblog",
+    ],
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}
