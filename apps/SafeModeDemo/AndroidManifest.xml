@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2025 MyOEM
+  SPDX-License-Identifier: Apache-2.0
+
+  AndroidManifest.xml for SafeModeDemo app.
+
+  This app is a system-level demo — it runs as a platform-signed APK and
+  has access to the SafeModeService via the ServiceManager hidden API.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.myoem.safemodedemo">
+
+    <application
+        android:label="SafeMode Demo"
+        android:theme="@android:style/Theme.DeviceDefault.DayNight"
+        android:supportsRtl="true">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+
+            <!-- App appears in the launcher -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Required for AAOS: marks this activity as safe to show while driving.
+                 Without this, CarPackageManagerService hides the app in the launcher
+                 and blocks it with "Can't be used while driving" when speed > 0. -->
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
+        </activity>
+
+    </application>
+
+</manifest>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2025 MyOEM
+  SPDX-License-Identifier: Apache-2.0
+
+  AndroidManifest.xml for the safemode_library AAR.
+
+  An AAR manifest declares permissions, metadata, and min SDK.
+  It does NOT declare an Application class or Activities — those live
+  in the app that consumes this library.
+
+  android:minSdkVersion 33 = Android 13 (AAOS Tiramisu) — the minimum
+  version where the VHAL AIDL V3 interface we depend on is available.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.myoem.safemode">
+
+    <!--
+      QUERY_ALL_PACKAGES is NOT needed — we use a direct ServiceManager lookup,
+      not an Intent/PackageManager query.
+
+      If the app targets SDK 31+, Android enforces package visibility filtering.
+      Because we access via ServiceManager (hidden API) rather than Intent, no
+      <queries> declaration is needed in the app's manifest either.
+    -->
+
+</manifest>

@@ -1,0 +1,79 @@
+// Copyright (C) 2025 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+//
+// Android.bp — Soong build rules for safemode_library.
+//
+// This builds the library as an android_library module for inclusion in
+// the system image. Apps built as part of AOSP (e.g., SafeModeDemo) add
+// "safemode_library" to their android_app.libs list.
+//
+// For standalone/Maven distribution, see build.gradle.kts.
+
+// ── Namespace ──────────────────────────────────────────────────────────────
+// Required when multiple Android.bp files exist under vendor/myoem/.
+// Prevents module name collisions at the Soong level.
+soong_namespace {}
+
+// ── safemode_library ───────────────────────────────────────────────────────
+// android_library produces an AAR-equivalent (classes.jar + resources).
+// Apps in the AOSP build depend on this directly by name.
+android_library {
+    name: "safemode_library",
+
+    // sdk_version: "current" uses the public Android SDK.
+    // We also need platform_apis for ServiceManager (hidden API).
+    // platform_apis: true overrides sdk_version and gives access to
+    // hidden @SystemApi/@hide classes.
+    platform_apis: true,
+
+    // vendor: false — this library is in the system/app partition, not vendor.
+    // Apps using this library run in the system or app domain.
+    // The library talks to the vendor service via Binder IPC.
+
+    srcs: [
+        "src/main/java/**/*.kt",
+        // AIDL files generate Java Binder stubs — both server (Stub) and
+        // client (proxy) sides. We need the stub so we can subclass
+        // ISafeModeCallback.Stub for our callback, and the proxy for
+        // ISafeModeService calls.
+        "src/main/aidl/**/*.aidl",
+    ],
+
+    // ── AIDL include root ────────────────────────────────────────────────────
+    // Without this, Soong passes -Ivendor/myoem/libs/safemode/src/ to aidl,
+    // which can't resolve "com.myoem.safemode.VehicleData" because the package
+    // root is actually src/main/aidl/ — not src/.
+    //
+    // The aidl compiler resolves an import like:
+    //   import com.myoem.safemode.VehicleData;
+    // by looking for the file:
+    //   <include_root>/com/myoem/safemode/VehicleData.aidl
+    //
+    // Setting local_include_dirs to "src/main/aidl" makes Soong pass:
+    //   -Ivendor/myoem/libs/safemode/src/main/aidl
+    // so the path resolves correctly.
+    aidl: {
+        local_include_dirs: ["src/main/aidl"],
+    },
+
+    resource_dirs: ["src/main/res"],
+
+    manifest: "src/main/AndroidManifest.xml",
+
+    // ── Dependencies ────────────────────────────────────────────────────────
+    // We do NOT depend on safemodeservice-aidl (the Soong aidl_interface)
+    // because we bundle our own copies of the AIDL files in src/main/aidl/.
+    // This makes the library self-contained — no Soong module dependency.
+    //
+    // If you prefer to share the single source of truth, replace the bundled
+    // AIDL with a dependency on:
+    //   "safemodeservice-aidl-java"  (from services/safemode/Android.bp)
+    // and remove the AIDL files from src/main/aidl/.
+    static_libs: [
+        // kotlin-stdlib is always needed for Kotlin code.
+        // Soong handles Kotlin compilation transparently; stdlib is implicit
+        // but listed explicitly to document the dependency.
+    ],
+
+    // kotlincflags: extra Kotlin compiler options (none needed here)
+}

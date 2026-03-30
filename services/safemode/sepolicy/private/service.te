@@ -1,0 +1,18 @@
+# Copyright (C) 2025 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+#
+# service.te — declares the ServiceManager label for our service.
+#
+# Every service registered with ServiceManager has a type defined here.
+# The label here ("safemoded_service") is what SELinux uses to control:
+#   - Who can ADD this service to ServiceManager (add_service in safemoded.te)
+#   - Who can FIND/GET this service from ServiceManager (find_service for clients)
+#
+# ── Attributes ────────────────────────────────────────────────────────────────
+# app_api_service    → this service is accessible from regular Android apps
+#                      (required for apps using safemode_library to connect)
+# service_manager_type → marks this as a ServiceManager entry (required)
+#
+# Omitting "app_api_service" would mean only system/vendor processes could
+# find this service. Since app developers use safemode_library, we need this.
+type safemoded_service, app_api_service, service_manager_type;

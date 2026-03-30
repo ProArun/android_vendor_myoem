@@ -1,0 +1,38 @@
+Here's the full debug chain, layer by layer:
+
+Layer 1 — VHAL (is vehicle data flowing?)
+
+
+adb shell ps -eZ | grep vehicle                        # is VHAL process alive?
+adb shell service list | grep -i vehicle               # is VHAL registered?
+adb logcat -d | grep -i "vehicle\|vhal" | tail -20
+Layer 2 — safemoded (is the native service alive and registered?)
+
+
+adb shell ps -eZ | grep safemoded                      # running? what SELinux domain?
+adb shell service list | grep safemode                 # registered in ServiceManager?
+adb logcat -d -s safemoded | tail -30                  # native service logs
+adb logcat -d | grep "avc: denied" | grep safemoded   # SELinux blocking anything?
+Layer 3 — Binder call (can we reach the service manually?)
+
+
+# Call getCurrentData() = transaction 1, no args
+adb shell service call com.myoem.safemode.ISafeModeService 1
+# If it returns "Result: Parcel" → service is alive and responding
+# If it returns "Service not found" → service never registered
+Layer 4 — SafeModeManager / App (is the library connecting?)
+
+
+adb logcat -s SafeModeManager                          # library connection logs
+adb logcat -s SafeModeDemo                             # app-level logs
+# Check if app process is alive
+adb shell ps -e | grep safemodedemo
+Layer 5 — Full logcat filtered (all layers at once)
+
+
+adb logcat -s safemoded,SafeModeManager,SafeModeDemo,ServiceManager
+Quick one-liner to see ALL avc denials + service issues since boot:
+
+
+adb logcat -d | grep -E "avc: denied|safemoded|SafeMode|ISafeModeService"
+Share the outputs and I'll tell you exactly where the chain breaks.

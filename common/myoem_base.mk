@@ -13,7 +13,10 @@ PRODUCT_SOONG_NAMESPACES += \
     vendor/myoem/hal/thermalcontrol \
     vendor/myoem/services/thermalcontrol \
     vendor/myoem/libs/thermalcontrol \
-    vendor/myoem/apps/ThermalMonitor
+    vendor/myoem/apps/ThermalMonitor \
+    vendor/myoem/services/safemode \
+    vendor/myoem/libs/safemode \
+    vendor/myoem/apps/SafeModeDemo
 
 # ── OEM services (present on all products) ─────────────────────────────────
 PRODUCT_PACKAGES += \
@@ -25,13 +28,19 @@ PRODUCT_PACKAGES += \
     thermalcontrol_client \
     thermalcontrol-manager \
     thermalcontrol-vintf-fragment \
-    ThermalMonitor
+    ThermalMonitor \
+    safemoded \
+    safemode_client \
+    safemode_library \
+    com.myoem.safemode-service \
+    SafeModeDemo
 
 # ── SELinux ────────────────────────────────────────────────────────────────
 PRODUCT_PRIVATE_SEPOLICY_DIRS += \
     vendor/myoem/services/calculator/sepolicy/private \
     vendor/myoem/services/bmi/sepolicy/private \
-    vendor/myoem/services/thermalcontrol/sepolicy/private
+    vendor/myoem/services/thermalcontrol/sepolicy/private \
+    vendor/myoem/services/safemode/sepolicy/private
 
 # ── OEM properties ────────────────────────────────────────────────────────
 # Readable at runtime via android.os.SystemProperties.get("ro.myoem.version")

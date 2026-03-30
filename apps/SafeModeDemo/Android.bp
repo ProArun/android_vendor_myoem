@@ -1,0 +1,83 @@
+// Copyright (C) 2025 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+//
+// Android.bp — Soong build rules for SafeModeDemo app.
+//
+// This is a system-signed Jetpack Compose app that visualises live vehicle
+// data from SafeModeService via safemode_library.
+
+// imports declares which other Soong namespaces this namespace can see.
+// Without this, "safemode_library" (defined in vendor/myoem/libs/safemode)
+// would be invisible to modules in this namespace — Soong enforces strict
+// namespace isolation so that vendors can't accidentally pull in each other's
+// private modules.
+soong_namespace {
+    imports: ["vendor/myoem/libs/safemode"]
+}
+
+android_app {
+    name: "SafeModeDemo",
+
+    // ── SDK / platform access ───────────────────────────────────────────────
+    // platform_apis: true is required because safemode_library uses the hidden
+    // android.os.ServiceManager API (even though it accesses it via reflection,
+    // the library itself must be compiled with platform APIs available).
+    platform_apis: true,
+
+    // ── Signing ────────────────────────────────────────────────────────────
+    // "platform" certificate gives the app the same UID as the system server.
+    // This is required for apps that use hidden APIs (ServiceManager lookup).
+    // Without this, the hidden API check at runtime will throw a NoSuchMethod.
+    certificate: "platform",
+
+    // ── Sources ────────────────────────────────────────────────────────────
+    srcs: ["src/main/java/**/*.kt"],
+
+    // ── Static dependencies ─────────────────────────────────────────────────
+    // safemode_library: our AIDL + Kotlin library (built from libs/safemode/)
+    //
+    // Compose dependencies — these are the Soong module names for Jetpack
+    // Compose as bundled in AOSP 15. They map to the equivalent Gradle
+    // artifact IDs:
+    //   androidx.compose.ui_ui            → androidx.compose.ui:ui
+    //   androidx.compose.material3_material3 → androidx.compose.material3:material3
+    //   androidx.compose.runtime_runtime  → androidx.compose.runtime:runtime
+    //   androidx.activity_activity-compose → androidx.activity:activity-compose
+    //   androidx.compose.animation_animation → androidx.compose.animation:animation
+    //
+    // Note: Compose in AOSP is linked statically (static_libs) — the framework
+    // does not provide Compose as a shared library. Each app that uses Compose
+    // carries its own copy of the Compose runtime in its APK.
+    static_libs: [
+        "safemode_library",
+
+        // Compose core
+        "androidx.compose.ui_ui",
+        "androidx.compose.ui_ui-graphics",
+        "androidx.compose.ui_ui-text",
+        "androidx.compose.ui_ui-unit",
+        "androidx.compose.ui_ui-tooling-preview",
+
+        // Compose Material 3 (Cards, Surface, etc.)
+        "androidx.compose.material3_material3",
+
+        // Compose runtime (remember, mutableStateOf, etc.)
+        "androidx.compose.runtime_runtime",
+
+        // Compose animation (animateColorAsState)
+        "androidx.compose.animation_animation",
+        "androidx.compose.animation_animation-core",
+
+        // Activity + Compose integration (setContent extension)
+        "androidx.activity_activity-compose",
+
+        // Foundation (layout primitives used by Material3 internally)
+        "androidx.compose.foundation_foundation",
+        "androidx.compose.foundation_foundation-layout",
+    ],
+
+    manifest: "AndroidManifest.xml",
+
+    // Kotlin options
+    kotlincflags: ["-opt-in=androidx.compose.material3.ExperimentalMaterial3Api"],
+}

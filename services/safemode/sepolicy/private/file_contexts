@@ -1,0 +1,20 @@
+# Copyright (C) 2025 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+#
+# file_contexts — maps filesystem paths to SELinux file labels.
+#
+# Format:  <path_regex>    <selinux_label>
+#
+# This entry labels /vendor/bin/safemoded with "safemoded_exec".
+# When init exec's this file, SELinux sees:
+#   - The file label: u:object_r:safemoded_exec:s0
+#   - The init domain: u:r:init:s0
+# The init_daemon_domain(safemoded) macro in safemoded.te defines the
+# transition: init + safemoded_exec → safemoded domain.
+# So the process runs as u:r:safemoded:s0.
+#
+# Without this entry, /vendor/bin/safemoded would get the default vendor
+# label (u:object_r:vendor_file:s0) and NO domain transition would happen.
+# init would log an error and refuse to start the service.
+#
+/vendor/bin/safemoded    u:object_r:safemoded_exec:s0
