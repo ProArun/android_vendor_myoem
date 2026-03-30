@@ -1,0 +1,42 @@
+# potvolumed.rc — Android init configuration for the potentiometer volume daemon.
+#
+# Android init (PID 1) parses all .rc files at boot. This file does two things:
+#   1. Runs setup commands once at boot (chown/chmod for the SPI device).
+#   2. Defines the potvolumed service so init can start/stop/restart it.
+#
+# WHY chown/chmod here?
+#   The Linux kernel creates /dev/spidev0.0 as root:root with mode 0600
+#   (only root can read/write). Our daemon runs as the 'system' user, so
+#   without this fixup it cannot open the SPI device at all.
+#   init runs as root, so it can change ownership before the service starts.
+
+on boot
+    # SPI device — kernel creates as root:root 0600, system user needs rw access.
+    # With dtparam=spi=on enabled, RPi5 exposes spidev0.0 (CE0) and spidev0.1 (CE1).
+    # Bus index 10 (spidev10.0) also appears; cover both.
+    chown root system /dev/spidev0.0
+    chmod 0660 /dev/spidev0.0
+    chown root system /dev/spidev0.1
+    chmod 0660 /dev/spidev0.1
+    chown root system /dev/spidev10.0
+    chmod 0660 /dev/spidev10.0
+
+    # uinput device — kernel creates as root:root 0600.
+    # potvolumed writes key events (KEY_VOLUMEUP/DOWN) via uinput.
+    chown root system /dev/uinput
+    chmod 0660 /dev/uinput
+
+service potvolumed /vendor/bin/potvolumed
+    # class main: started during the main boot phase, after core services
+    # (like servicemanager, audioserver) are already running.
+    # AudioSystem calls will fail if audioserver hasn't started yet, so
+    # 'main' is the correct class — it starts after 'core'.
+    class main
+
+    # user system: runs with the Android 'system' UID (1000).
+    # This gives us permission to call AudioPolicyService via Binder.
+    user system
+
+    # group system: primary group. Needed for /dev/spidev0.0 after the
+    # chown above sets group to 'system'.
+    group system

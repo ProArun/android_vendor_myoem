@@ -1,0 +1,21 @@
+# file_contexts — assigns SELinux labels to files on the filesystem.
+#
+# FORMAT:
+#   <path_regex>    <label>
+#
+# This file is processed by the build system and merged into the device's
+# combined file_contexts. At boot, the init process labels all files
+# matching these patterns with the specified SELinux type.
+#
+# WHY THIS FILE IS NEEDED:
+#   Without an entry here, /vendor/bin/potvolumed gets the generic
+#   vendor_file label. The init_daemon_domain() macro in potvolumed.te
+#   requires the binary to have the potvolumed_exec type for the domain
+#   transition to work. If the binary has the wrong label, init runs it
+#   in the wrong domain (or init_daemon_domain simply doesn't trigger).
+#
+# VERIFY ON DEVICE:
+#   adb shell ls -laZ /vendor/bin/potvolumed
+#   Expected: u:object_r:potvolumed_exec:s0
+
+/vendor/bin/potvolumed    u:object_r:potvolumed_exec:s0

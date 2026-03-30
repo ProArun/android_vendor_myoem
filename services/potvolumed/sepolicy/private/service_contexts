@@ -1,0 +1,9 @@
+# service_contexts — maps named Binder services to SELinux labels.
+#
+# potvolumed does NOT register any Binder service of its own.
+# It is a pure client: it calls AudioSystem (AudioPolicyService) but
+# never calls AServiceManager_addService().
+#
+# This file is intentionally empty (no service registrations).
+# It is included here so the build system finds the expected file in the
+# sepolicy/private/ directory without producing a "file not found" warning.
