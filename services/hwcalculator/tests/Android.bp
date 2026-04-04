@@ -1,0 +1,45 @@
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VTS test binary for HwCalculatorService
+//
+// Test type : VTS (Vendor Test Suite)
+// Why VTS?  : HwCalculatorService is a vendor C++ binder service. VTS runs with
+//             system privileges and can reach vendor services via /dev/binder.
+//
+// Build     : m VtsHwCalculatorServiceTest
+// Run       : atest VtsHwCalculatorServiceTest
+// ─────────────────────────────────────────────────────────────────────────────
+
+cc_test {
+    name: "VtsHwCalculatorServiceTest",
+
+    // vendor:true removed — libbinder_ndk is LLNDK so the test binary can
+    // reach vendor services from /data without needing to be on the vendor
+    // partition. Keeping vendor:true causes a TradeFed push conflict where
+    // it pushes the binary file and then tries to push a same-named directory
+    // on top of it.
+
+    srcs: ["VtsHwCalculatorServiceTest.cpp"],
+    test_config: "AndroidTest.xml",
+
+    shared_libs: [
+        "libbinder_ndk",   // LLNDK — uses /dev/binder, works across partitions
+        "liblog",          // ALOGD / ALOGE for test diagnostics
+    ],
+
+    static_libs: [
+        // NDK backend stubs generated from IHwCalculatorService.aidl.
+        // "unstable" interface → no version suffix.
+        "hwcalculatorservice-aidl-ndk",
+    ],
+
+    // Register this binary with the VTS suite so `atest` and the VTS
+    // harness can discover and run it automatically.
+    test_suites: ["vts"],
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}

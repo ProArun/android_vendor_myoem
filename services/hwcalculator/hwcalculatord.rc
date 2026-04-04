@@ -1,0 +1,6 @@
+service hwcalculatord /vendor/bin/hwcalculatord
+    class main
+    user system
+    group system
+    # Restart automatically if the service crashes
+    # (no 'oneshot' — let init restart on failure)

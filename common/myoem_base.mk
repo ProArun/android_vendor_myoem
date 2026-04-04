@@ -17,7 +17,8 @@ PRODUCT_SOONG_NAMESPACES += \
     vendor/myoem/services/safemode \
     vendor/myoem/libs/safemode \
     vendor/myoem/apps/SafeModeDemo \
-    vendor/myoem/services/potvolumed
+    vendor/myoem/services/potvolumed \
+    vendor/myoem/services/hwcalculator
 
 # ── OEM services (present on all products) ─────────────────────────────────
 PRODUCT_PACKAGES += \
@@ -35,7 +36,10 @@ PRODUCT_PACKAGES += \
     safemode_library \
     com.myoem.safemode-service \
     SafeModeDemo \
-    potvolumed
+    potvolumed \
+    hwcalculatord \
+    hwcalculator_client
+
 
 # ── SELinux ────────────────────────────────────────────────────────────────
 # Vendor services must use BOARD_VENDOR_SEPOLICY_DIRS, not PRODUCT_PRIVATE_SEPOLICY_DIRS.
@@ -46,7 +50,8 @@ BOARD_VENDOR_SEPOLICY_DIRS += \
     vendor/myoem/services/bmi/sepolicy/private \
     vendor/myoem/services/thermalcontrol/sepolicy/private \
     vendor/myoem/services/safemode/sepolicy/private \
-    vendor/myoem/services/potvolumed/sepolicy/private
+    vendor/myoem/services/potvolumed/sepolicy/private \
+    vendor/myoem/services/hwcalculator/sepolicy/private
 
 # ── OEM properties ────────────────────────────────────────────────────────
 # Readable at runtime via android.os.SystemProperties.get("ro.myoem.version")

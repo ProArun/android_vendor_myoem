@@ -1,0 +1,15 @@
+
+# Process domain for the hwcalculatord binary
+type hwcalculatord, domain;
+type hwcalculatord_exec, exec_type, vendor_file_type, file_type;
+
+# Allow init to launch and transition into the hwcalculatord domain
+init_daemon_domain(hwcalculatord)
+
+# Allow using the binder IPC mechanism and registering as a service
+binder_use(hwcalculatord)
+binder_service(hwcalculatord)
+
+# Allow registering the service with the ServiceManager
+add_service(hwcalculatord, hwcalculatord_service)
+

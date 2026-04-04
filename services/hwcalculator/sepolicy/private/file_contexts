@@ -1,0 +1,3 @@
+
+# Label the hwcalculatord executable so init can transition into the hwcalculatord domain
+/vendor/bin/hwcalculatord    u:object_r:hwcalculatord_exec:s0

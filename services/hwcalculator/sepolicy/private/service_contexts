@@ -1,0 +1,3 @@
+# Maps the binder service name to its SELinux label.
+# Must exactly match the string passed to sm->addService() in main.cpp.
+com.myoem.hwcalculator.IHwCalculatorService    u:object_r:hwcalculatord_service:s0

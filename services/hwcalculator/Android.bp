@@ -1,0 +1,61 @@
+soong_namespace {
+}
+
+aidl_interface {
+    name: "hwcalculatorservice-aidl",
+    vendor_available: true,
+    unstable: true,
+    srcs: ["aidl/com/myoem/hwcalculator/IHwCalculatorService.aidl"],
+    local_include_dir: "aidl",
+    backend: {
+        cpp: {
+            enabled: false,
+        },
+        java: {
+            enabled: true,
+            platform_apis: true,
+        },
+        ndk: {
+            enabled: true,  // libbinder_ndk is LLNDK — works from vendor, talks to system ServiceManager
+        },
+        rust: {
+            enabled: false,
+        },
+    },
+}
+
+cc_binary {
+    name: "hwcalculator_client",
+    vendor: true,
+    srcs: ["test/hwcalculator_client.cpp"],
+    shared_libs: [
+        "libbinder_ndk",
+        "liblog",
+    ],
+    static_libs: [
+        "hwcalculatorservice-aidl-ndk",
+    ],
+    cflags: ["-Wall", "-Wextra", "-Werror"],
+}
+
+cc_binary {
+    name: "hwcalculatord",
+    vendor: true,
+    init_rc: ["hwcalculatord.rc"],
+    srcs: [
+        "src/HwCalculatorService.cpp",
+        "src/main.cpp",
+    ],
+    shared_libs: [
+        "libbinder_ndk",
+        "liblog",
+    ],
+    static_libs: [
+        "hwcalculatorservice-aidl-ndk",
+    ],
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}
