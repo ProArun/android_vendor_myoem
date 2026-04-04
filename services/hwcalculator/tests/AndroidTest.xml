@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- VTS test config for VtsHwCalculatorServiceTest.
+     Push the whole module directory to /data/local/tmp/VtsHwCalculatorServiceTest/.
+     GTest then runs:
+       find -L /data/local/tmp/VtsHwCalculatorServiceTest -type f -perm -u+r,u+x
+            -not -path "*/arm/*" ...
+     which picks up the arm64 binary inside the pushed directory.
+     NOTE: Do NOT manually push this binary to /data/local/tmp/ before running
+     atest — if a FILE exists at that path, the directory push will conflict. -->
+<configuration description="VtsHwCalculatorServiceTest">
+    <option name="test-suite-tag" value="vts" />
+
+    <target_preparer class="com.android.tradefed.targetprep.PushFilePreparer">
+        <option name="cleanup" value="true" />
+        <option name="push" value="VtsHwCalculatorServiceTest->/data/local/tmp/VtsHwCalculatorServiceTest" />
+    </target_preparer>
+
+    <test class="com.android.tradefed.testtype.GTest">
+        <option name="native-test-device-path" value="/data/local/tmp" />
+        <option name="module-name" value="VtsHwCalculatorServiceTest" />
+    </test>
+</configuration>

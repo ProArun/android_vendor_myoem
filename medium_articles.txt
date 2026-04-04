@@ -1,0 +1,10 @@
+1. https://medium.com/@aruncse2k20/aosp-vendor-development-article-series-overview-2ebd2f334ecf?source=your_stories_outbox---writer_outbox_published-----------------------------------------
+2. https://medium.com/@aruncse2k20/part-1-the-big-picture-how-android-is-actually-organized-05a2f492cd61?source=your_stories_outbox---writer_outbox_published-----------------------------------------
+3. https://medium.com/@aruncse2k20/part-2-setting-up-your-own-vendor-directory-5758692eb9f9?source=your_stories_outbox---writer_outbox_published-----------------------------------------
+4. https://medium.com/@aruncse2k20/part-3-binder-ipc-the-backbone-of-android-services-fc0593384f67?source=your_stories_outbox---writer_outbox_published-----------------------------------------
+5. https://medium.com/@aruncse2k20/part-4-aidl-defining-your-service-interface-91280b11ddfe?source=your_stories_outbox---writer_outbox_published-----------------------------------------
+6. https://medium.com/@aruncse2k20/part-5-building-the-calculator-service-f9c95632a51d?source=your_stories_outbox---writer_outbox_published-----------------------------------------
+7. https://medium.com/@aruncse2k20/part-6-building-the-bmi-service-1e79b2a054e2?source=your_stories_outbox---writer_outbox_published-----------------------------------------
+8. https://medium.com/@aruncse2k20/part-7-selinux-teaching-android-to-trust-your-service-19d6593d194a?source=your_stories_outbox---writer_outbox_published-----------------------------------------
+9. https://medium.com/@aruncse2k20/part-8-debugging-when-things-dont-work-c9b0a0584ed5?source=your_stories_outbox---writer_outbox_published-----------------------------------------
+10. https://medium.com/@aruncse2k20/part-9-the-manager-pattern-04758fef14d0?source=your_stories_outbox---writer_outbox_published-----------------------------------------
