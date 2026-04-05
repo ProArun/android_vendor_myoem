@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2024 MyOEM -->
+<resources>
+    <string name="app_name">BMI Calculator C</string>
+    <string name="label_inputs">Inputs</string>
+    <string name="hint_input1">Value 1 — height (m) or integer A</string>
+    <string name="hint_input2">Value 2 — weight (kg) or integer B</string>
+    <string name="label_operations">Operations</string>
+    <string name="btn_bmi">Calculate BMI</string>
+    <string name="btn_add">Add (A+B)</string>
+    <string name="btn_sub">Subtract (A−B)</string>
+    <string name="btn_mul">Multiply (A×B)</string>
+    <string name="btn_div">Divide (A÷B)</string>
+</resources>

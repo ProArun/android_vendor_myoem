@@ -21,7 +21,9 @@ PRODUCT_SOONG_NAMESPACES += \
     vendor/myoem/services/hwcalculator \
     vendor/myoem/apps/BMICalculatorA \
     vendor/myoem/libs/bmicalculator \
-    vendor/myoem/apps/BMICalculatorB
+    vendor/myoem/apps/BMICalculatorB \
+    vendor/myoem/services/bmiapp \
+    vendor/myoem/apps/BMICalculatorC
 
 # ── OEM services (present on all products) ─────────────────────────────────
 PRODUCT_PACKAGES += \
@@ -47,7 +49,11 @@ PRODUCT_PACKAGES += \
     BMICalculatorA \
     bmicalculator-manager \
     libbmicalmanager_jni \
-    BMICalculatorB
+    BMICalculatorB \
+    bmiapp-aidl-java \
+    libbmiappsvc_jni \
+    BmiSystemService \
+    BMICalculatorC
 
 
 # ── SELinux ────────────────────────────────────────────────────────────────
