@@ -1,0 +1,90 @@
+// Copyright (C) 2024 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+soong_namespace {}
+
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// bmiapp-aidl — LOCAL-stability AIDL interface for app ↔ system service.
+//
+// Generates bmiapp-aidl-java, consumed by:
+//   BmiSystemService (implements IBmiAppService.Stub)
+//   BMICalculatorC   (calls IBmiAppService)
+// ─────────────────────────────────────────────────────────────────────────────
+aidl_interface {
+    name: "bmiapp-aidl",
+    unstable: true,
+    srcs: ["aidl/com/myoem/bmiapp/IBmiAppService.aidl"],
+    local_include_dir: "aidl",
+    backend: {
+        cpp: {
+            enabled: false,
+        },
+        java: {
+            enabled: true,
+            platform_apis: true,
+        },
+        ndk: {
+            enabled: false,
+        },
+        rust: {
+            enabled: false,
+        },
+    },
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// libbmiappsvc_jni — JNI bridge from BmiAppService to bmid/calculatord.
+//
+// Uses libbinder + FLAG_PRIVATE_VENDOR (same technique as BMICalculatorA/B).
+// ─────────────────────────────────────────────────────────────────────────────
+cc_library_shared {
+    name: "libbmiappsvc_jni",
+
+    srcs: ["jni/BmiAppServiceJni.cpp"],
+
+    header_libs: ["jni_headers"],
+
+    shared_libs: [
+        "libbinder",
+        "libutils",
+        "liblog",
+    ],
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BmiSystemService — persistent privileged system app.
+//
+// Registers IBmiAppService with ServiceManager at boot.
+// Forwards calls to bmid/calculatord via libbmiappsvc_jni.
+// ─────────────────────────────────────────────────────────────────────────────
+android_app {
+    name: "BmiSystemService",
+
+    platform_apis: true,
+    privileged: true,
+    certificate: "platform",
+    manifest: "AndroidManifest.xml",
+
+    srcs: ["java/com/myoem/bmiapp/BmiAppService.java",
+           "java/com/myoem/bmiapp/BmiAppApplication.java"],
+
+    static_libs: [
+        "bmiapp-aidl-java",
+    ],
+
+    jni_libs: ["libbmiappsvc_jni"],
+
+    optimize: {
+        enabled: false,
+    },
+}

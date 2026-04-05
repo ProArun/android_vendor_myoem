@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2024 MyOEM -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.myoem.bmiapp"
+    android:sharedUserId="android.uid.system">
+
+    <!--
+        android:persistent="true" — ActivityManager restarts this process
+        if it ever dies. Combined with BmiAppApplication.onCreate() starting
+        BmiAppService, this keeps the binder registration alive at all times.
+        Requires privileged system app install (system/priv-app/).
+    -->
+    <application
+        android:name=".BmiAppApplication"
+        android:label="BmiSystemService"
+        android:persistent="true">
+
+        <!--
+            BmiAppService: registers IBmiAppService with ServiceManager.
+            Not exported via Intent — only accessible via ServiceManager.getService().
+        -->
+        <service
+            android:name=".BmiAppService"
+            android:exported="false" />
+
+    </application>
+
+</manifest>

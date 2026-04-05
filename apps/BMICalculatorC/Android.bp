@@ -1,0 +1,76 @@
+// Copyright (C) 2024 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+soong_namespace {
+    // Import bmiapp namespace to reference bmiapp-aidl-java.
+    imports: ["vendor/myoem/services/bmiapp"],
+}
+
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BMICalculatorCLib — app sources as a library (same pattern as B)
+// ─────────────────────────────────────────────────────────────────────────────
+android_library {
+    name: "BMICalculatorCLib",
+
+    srcs: ["src/main/kotlin/com/myoem/bmicalculatorc/BmiCalCViewModel.kt",
+           "src/main/kotlin/com/myoem/bmicalculatorc/MainActivity.kt",
+           "src/main/kotlin/com/myoem/bmicalculatorc/ui/BmiCalScreen.kt",
+           "src/main/kotlin/com/myoem/bmicalculatorc/ui/theme/Theme.kt"],
+    resource_dirs: ["src/main/res"],
+    manifest: "AndroidManifest.xml",
+
+    static_libs: [
+        // AIDL stubs for IBmiAppService — the ONLY binder-related dependency.
+        // No JNI, no libbinder, no FLAG_PRIVATE_VENDOR in any of these stubs.
+        "bmiapp-aidl-java",
+
+        "kotlin-stdlib",
+        "kotlinx-coroutines-android",
+        "androidx.core_core-ktx",
+        "androidx.activity_activity-compose",
+        "androidx.compose.runtime_runtime",
+        "androidx.compose.ui_ui",
+        "androidx.compose.foundation_foundation",
+        "androidx.compose.material3_material3",
+        "androidx.lifecycle_lifecycle-viewmodel-ktx",
+        "androidx.lifecycle_lifecycle-viewmodel-compose",
+        "androidx.lifecycle_lifecycle-runtime-compose",
+    ],
+
+    // platform_apis needed only for ServiceManager.getService() (@hide).
+    // The app itself has ZERO binder internals — only the service lookup uses @hide.
+    platform_apis: true,
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BMICalculatorC — industry-standard app
+//
+// Calls BmiSystemService via plain Java AIDL.
+// No jni_libs — this app has NO native code whatsoever.
+// No FLAG_PRIVATE_VENDOR — that lives only in BmiSystemService's JNI.
+//
+// Build: m BMICalculatorC
+// ─────────────────────────────────────────────────────────────────────────────
+android_app {
+    name: "BMICalculatorC",
+
+    platform_apis: true,
+    privileged: true,
+    certificate: "platform",
+    manifest: "AndroidManifest.xml",
+
+    static_libs: ["BMICalculatorCLib"],
+
+    // No jni_libs — BMICalculatorC has zero native code.
+    // Compare: BMICalculatorA had libbmicalculator_jni
+    //          BMICalculatorB had libbmicalmanager_jni
+    //          BMICalculatorC has nothing here.
+
+    optimize: {
+        enabled: false,
+    },
+}
