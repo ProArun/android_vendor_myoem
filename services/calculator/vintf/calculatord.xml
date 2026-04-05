@@ -1,0 +1,17 @@
+<manifest version="1.0" type="device">
+    <!--
+      VINTF manifest fragment for the MyOEM Calculator AIDL service.
+      Declares ICalculatorService/default so the service manager accepts
+      registration from calculatord and grants VINTF stability to the proxy —
+      enabling system-partition callers (e.g. BMICalculatorA JNI) to reach
+      this vendor service.
+    -->
+    <hal format="aidl">
+        <name>com.myoem.calculator</name>
+        <version>1</version>
+        <interface>
+            <name>ICalculatorService</name>
+            <instance>default</instance>
+        </interface>
+    </hal>
+</manifest>

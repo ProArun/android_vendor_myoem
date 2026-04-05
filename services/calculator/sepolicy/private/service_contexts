@@ -3,4 +3,4 @@
 
 # Maps the binder service name to its SELinux label.
 # Must exactly match the string passed to sm->addService() in main.cpp.
-com.myoem.calculator.ICalculatorService    u:object_r:calculatord_service:s0
+com.myoem.calculator.ICalculatorService/default    u:object_r:calculatord_service:s0

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2024 MyOEM
+  SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="app_name">BMI Calculator A</string>
+
+    <!-- Input section -->
+    <string name="label_inputs">Inputs</string>
+    <string name="hint_input1">Value 1  (height in m  /  integer A)</string>
+    <string name="hint_input2">Value 2  (weight in kg  /  integer B)</string>
+
+    <!-- Operation buttons -->
+    <string name="label_operations">Operations</string>
+    <string name="btn_bmi">Calculate BMI</string>
+    <string name="btn_add">Add  (A + B)</string>
+    <string name="btn_sub">Subtract  (A − B)</string>
+    <string name="btn_mul">Multiply  (A × B)</string>
+    <string name="btn_div">Divide  (A ÷ B)</string>
+</resources>

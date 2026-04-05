@@ -1,0 +1,16 @@
+<manifest version="1.0" type="device">
+    <!--
+      VINTF manifest fragment for the MyOEM BMI AIDL service.
+      Declares IBMIService/default so the service manager accepts registration
+      from bmid and grants VINTF stability to the proxy — enabling system-
+      partition callers (e.g. BMICalculatorA JNI) to reach this vendor service.
+    -->
+    <hal format="aidl">
+        <name>com.myoem.bmi</name>
+        <version>1</version>
+        <interface>
+            <name>IBMIService</name>
+            <instance>default</instance>
+        </interface>
+    </hal>
+</manifest>

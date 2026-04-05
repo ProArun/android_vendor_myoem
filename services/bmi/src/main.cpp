@@ -9,7 +9,12 @@
 
 #include "BMIService.h"
 
-static constexpr const char* kServiceName = "com.myoem.bmi.IBMIService";
+// VINTF AIDL HAL name format: <interface_descriptor>/<instance>
+// The "/default" suffix + the VINTF manifest fragment in vintf/bmid.xml
+// together allow system-partition callers (e.g. BMICalculatorA JNI) to reach
+// this vendor service. The service manager sets VINTF stability on the proxy
+// automatically when the name matches a manifest entry.
+static constexpr const char* kServiceName = "com.myoem.bmi.IBMIService/default";
 
 int main() {
     ALOGI("bmid starting");

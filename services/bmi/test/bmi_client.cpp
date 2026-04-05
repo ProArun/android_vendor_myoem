@@ -18,7 +18,7 @@ using aidl::com::myoem::bmi::IBMIService;
 
 static std::shared_ptr<IBMIService> getService() {
     ndk::SpAIBinder binder(AServiceManager_checkService(
-            "com.myoem.bmi.IBMIService"));
+            "com.myoem.bmi.IBMIService/default"));
     if (binder.get() == nullptr) {
         std::cerr << "ERROR: bmid not found. Is it running?\n"
                   << "       adb shell service list | grep bmi\n";

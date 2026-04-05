@@ -3,6 +3,9 @@
 type hwcalculatord, domain;
 type hwcalculatord_exec, exec_type, vendor_file_type, file_type;
 
+# Service label used in service_contexts and service_manager allow rules
+type hwcalculatord_service, service_manager_type;
+
 # Allow init to launch and transition into the hwcalculatord domain
 init_daemon_domain(hwcalculatord)
 
