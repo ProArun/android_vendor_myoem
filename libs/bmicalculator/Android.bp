@@ -1,0 +1,58 @@
+// Copyright (C) 2024 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+soong_namespace {}
+
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// libbmicalmanager_jni — JNI bridge owned by the manager library.
+//
+// Uses libbinder + IBinder::FLAG_PRIVATE_VENDOR (same as libbmicalculator_jni
+// in BMICalculatorA) to call VENDOR-stability services from system partition.
+//
+// Installed to /system/lib64/ and referenced via jni_libs in BMICalculatorB.
+// ─────────────────────────────────────────────────────────────────────────────
+cc_library_shared {
+    name: "libbmicalmanager_jni",
+
+    srcs: ["jni/BmiCalManagerJni.cpp"],
+
+    header_libs: ["jni_headers"],
+
+    shared_libs: [
+        "libbinder",
+        "libutils",
+        "liblog",
+    ],
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// bmicalculator-manager — public Java/Kotlin API consumed by apps.
+//
+// Apps depend on this library; they never import libbinder, ServiceManager,
+// Parcel, or any binder internals. All of that is hidden inside the JNI.
+//
+// Installed to system partition (no vendor:true). BMICalculatorB lists this
+// in static_libs and lists libbmicalmanager_jni in jni_libs.
+// ─────────────────────────────────────────────────────────────────────────────
+java_library {
+    name: "bmicalculator-manager",
+
+    srcs: ["java/**/*.kt"],
+
+    libs: ["kotlin-stdlib"],
+
+    // No platform_apis needed — the manager uses only public APIs in its
+    // Java/Kotlin layer. ServiceManager is NOT called here; it is called
+    // from inside the JNI C++ code via defaultServiceManager().
+    sdk_version: "current",
+}

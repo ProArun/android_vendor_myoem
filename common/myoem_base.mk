@@ -19,7 +19,9 @@ PRODUCT_SOONG_NAMESPACES += \
     vendor/myoem/apps/SafeModeDemo \
     vendor/myoem/services/potvolumed \
     vendor/myoem/services/hwcalculator \
-    vendor/myoem/apps/BMICalculatorA
+    vendor/myoem/apps/BMICalculatorA \
+    vendor/myoem/libs/bmicalculator \
+    vendor/myoem/apps/BMICalculatorB
 
 # ── OEM services (present on all products) ─────────────────────────────────
 PRODUCT_PACKAGES += \
@@ -42,7 +44,10 @@ PRODUCT_PACKAGES += \
     potvolumed \
     hwcalculatord \
     hwcalculator_client \
-    BMICalculatorA
+    BMICalculatorA \
+    bmicalculator-manager \
+    libbmicalmanager_jni \
+    BMICalculatorB
 
 
 # ── SELinux ────────────────────────────────────────────────────────────────
