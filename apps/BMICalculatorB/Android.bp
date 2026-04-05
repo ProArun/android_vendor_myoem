@@ -1,0 +1,70 @@
+// Copyright (C) 2024 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+soong_namespace {
+    // Import the manager namespace so we can reference bmicalculator-manager
+    // and libbmicalmanager_jni.
+    imports: ["vendor/myoem/libs/bmicalculator"],
+}
+
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BMICalculatorBLib — production sources as a reusable library
+// ─────────────────────────────────────────────────────────────────────────────
+android_library {
+    name: "BMICalculatorBLib",
+
+    srcs: ["src/main/kotlin/**/*.kt"],
+    resource_dirs: ["src/main/res"],
+    manifest: "AndroidManifest.xml",
+
+    static_libs: [
+        // Manager library — the ONLY binder-related dependency.
+        // No AIDL stubs, no ServiceManager, no JNI here in the app.
+        "bmicalculator-manager",
+
+        "kotlin-stdlib",
+        "kotlinx-coroutines-android",
+        "androidx.core_core-ktx",
+        "androidx.activity_activity-compose",
+        "androidx.compose.runtime_runtime",
+        "androidx.compose.ui_ui",
+        "androidx.compose.foundation_foundation",
+        "androidx.compose.material3_material3",
+        "androidx.lifecycle_lifecycle-viewmodel-ktx",
+        "androidx.lifecycle_lifecycle-viewmodel-compose",
+        "androidx.lifecycle_lifecycle-runtime-compose",
+    ],
+
+    platform_apis: true,
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BMICalculatorB — the production APK
+//
+// Identical UI to BMICalculatorA. Calls services through BmiCalManager instead
+// of directly — demonstrating the manager pattern.
+//
+// Build: m BMICalculatorB
+// ─────────────────────────────────────────────────────────────────────────────
+android_app {
+    name: "BMICalculatorB",
+
+    platform_apis: true,
+    privileged: true,
+    certificate: "platform",
+    manifest: "AndroidManifest.xml",
+
+    static_libs: ["BMICalculatorBLib"],
+
+    // libbmicalmanager_jni.so is owned by the manager library but packaged
+    // here in the APK (installed to /system/lib64/).
+    jni_libs: ["libbmicalmanager_jni"],
+
+    optimize: {
+        enabled: false,
+    },
+}
