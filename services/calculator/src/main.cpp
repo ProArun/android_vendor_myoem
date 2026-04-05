@@ -9,8 +9,13 @@
 
 #include "CalculatorService.h"
 
+// VINTF AIDL HAL name format: <interface_descriptor>/<instance>
+// The "/default" suffix + the VINTF manifest fragment in vintf/calculatord.xml
+// together allow system-partition callers (e.g. BMICalculatorA JNI) to reach
+// this vendor service. The service manager sets VINTF stability on the proxy
+// automatically when the name matches a manifest entry.
 static constexpr const char* kServiceName =
-        "com.myoem.calculator.ICalculatorService";
+        "com.myoem.calculator.ICalculatorService/default";
 
 int main() {
     ALOGI("calculatord starting");

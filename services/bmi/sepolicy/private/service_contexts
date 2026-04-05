@@ -1,4 +1,4 @@
 # Copyright (C) 2024 MyOEM
 # SPDX-License-Identifier: Apache-2.0
 
-com.myoem.bmi.IBMIService    u:object_r:bmid_service:s0
+com.myoem.bmi.IBMIService/default    u:object_r:bmid_service:s0

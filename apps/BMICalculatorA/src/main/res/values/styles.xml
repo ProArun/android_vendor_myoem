@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2024 MyOEM
+  SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <!-- Required by AndroidManifest android:theme — delegates to Compose theme at runtime -->
+    <style name="Theme.BMICalculatorA" parent="android:Theme.DeviceDefault.NoActionBar" />
+</resources>

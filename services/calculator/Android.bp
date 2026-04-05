@@ -40,6 +40,15 @@ aidl_interface {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
+// VINTF manifest fragment
+// ──────────────────────────────────────────────────────────────────────────────
+vintf_fragment {
+    name: "calculatord-vintf-fragment",
+    src: "vintf/calculatord.xml",
+    vendor: true,
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 // Command-line test client
 //
 // Installed to: /vendor/bin/calculator_client

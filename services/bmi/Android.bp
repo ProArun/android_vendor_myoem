@@ -39,6 +39,15 @@ aidl_interface {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
+// VINTF manifest fragment
+// ──────────────────────────────────────────────────────────────────────────────
+vintf_fragment {
+    name: "bmid-vintf-fragment",
+    src: "vintf/bmid.xml",
+    vendor: true,
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 // BMI test client
 //
 // Installed to: /vendor/bin/bmi_client

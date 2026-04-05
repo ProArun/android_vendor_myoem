@@ -18,13 +18,16 @@ PRODUCT_SOONG_NAMESPACES += \
     vendor/myoem/libs/safemode \
     vendor/myoem/apps/SafeModeDemo \
     vendor/myoem/services/potvolumed \
-    vendor/myoem/services/hwcalculator
+    vendor/myoem/services/hwcalculator \
+    vendor/myoem/apps/BMICalculatorA
 
 # ── OEM services (present on all products) ─────────────────────────────────
 PRODUCT_PACKAGES += \
     calculatord \
+    calculatord-vintf-fragment \
     calculator_client \
     bmid \
+    bmid-vintf-fragment \
     bmi_client \
     thermalcontrold \
     thermalcontrol_client \
@@ -38,7 +41,8 @@ PRODUCT_PACKAGES += \
     SafeModeDemo \
     potvolumed \
     hwcalculatord \
-    hwcalculator_client
+    hwcalculator_client \
+    BMICalculatorA
 
 
 # ── SELinux ────────────────────────────────────────────────────────────────

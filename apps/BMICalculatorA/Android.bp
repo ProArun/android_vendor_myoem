@@ -1,0 +1,84 @@
+// Copyright (C) 2024 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+soong_namespace {
+    // No imports needed — JNI uses raw libbinder Parcel, not NDK AIDL stubs.
+}
+
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// libbmicalculator_jni — JNI bridge using libbinder + FLAG_PRIVATE_VENDOR.
+//
+// FLAG_PRIVATE_VENDOR in BpBinder::transact lowers the required stability from
+// LOCAL (system) to VENDOR, allowing a system-partition JNI library to call
+// VENDOR-stability binder services (bmid, calculatord) without BAD_TYPE.
+// ─────────────────────────────────────────────────────────────────────────────
+cc_library_shared {
+    name: "libbmicalculator_jni",
+
+    srcs: ["jni/BmiCalJni.cpp"],
+
+    header_libs: ["jni_headers"],
+
+    shared_libs: [
+        "libbinder",
+        "libutils",
+        "liblog",
+    ],
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BMICalculatorALib — production sources as a reusable library
+// ─────────────────────────────────────────────────────────────────────────────
+android_library {
+    name: "BMICalculatorALib",
+
+    srcs: ["src/main/kotlin/**/*.kt"],
+    resource_dirs: ["src/main/res"],
+    manifest: "AndroidManifest.xml",
+
+    static_libs: [
+        "kotlin-stdlib",
+        "kotlinx-coroutines-android",
+        "androidx.core_core-ktx",
+        "androidx.activity_activity-compose",
+        "androidx.compose.runtime_runtime",
+        "androidx.compose.ui_ui",
+        "androidx.compose.foundation_foundation",
+        "androidx.compose.material3_material3",
+        "androidx.lifecycle_lifecycle-viewmodel-ktx",
+        "androidx.lifecycle_lifecycle-viewmodel-compose",
+        "androidx.lifecycle_lifecycle-runtime-compose",
+    ],
+
+    platform_apis: true,
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BMICalculatorA — the production APK
+// ─────────────────────────────────────────────────────────────────────────────
+android_app {
+    name: "BMICalculatorA",
+
+    platform_apis: true,
+    privileged: true,
+    certificate: "platform",
+    manifest: "AndroidManifest.xml",
+
+    static_libs: ["BMICalculatorALib"],
+
+    jni_libs: ["libbmicalculator_jni"],
+
+    optimize: {
+        enabled: false,
+    },
+}

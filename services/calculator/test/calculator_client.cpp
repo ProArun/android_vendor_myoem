@@ -18,7 +18,7 @@ using aidl::com::myoem::calculator::ICalculatorService;
 
 static std::shared_ptr<ICalculatorService> getService() {
     ndk::SpAIBinder binder(AServiceManager_checkService(
-            "com.myoem.calculator.ICalculatorService"));
+            "com.myoem.calculator.ICalculatorService/default"));
     if (binder.get() == nullptr) {
         std::cerr << "ERROR: calculatord not found. Is it running?\n"
                   << "       adb shell service list | grep calculator\n";
