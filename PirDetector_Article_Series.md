@@ -1880,8 +1880,46 @@ From the ThermalControl project: `sysfs_hwmon` doesn't exist — hwmon files use
 generic `sysfs` type on RPi5 AOSP 15.
 
 From this project: `/dev/gpiochipN` may have type `gpio_device` or something else
-depending on the build. Always run `adb shell ls -laZ /dev/gpiochip4` before writing
+depending on the build. Always run `adb shell ls -laZ /dev/gpiochip0` before writing
 the `.te` file. Ten seconds of checking saves an hour of debugging.
+
+## 11. `oneway` Callbacks Need a Reverse `binder_call` SELinux Rule
+
+When a vendor service fires a `oneway` callback into a client app, the Binder call goes
+in the **reverse** direction — from the service domain into the app domain. This requires
+its own `binder_call` rule that is easy to forget.
+
+```te
+# Forward: app calls the service (the obvious one)
+binder_call(platform_app, pirdetectord)   # usually handled by AOSP base policy
+
+# Reverse: service fires callback into app (the one you'll forget)
+binder_call(pirdetectord, platform_app)   # YOU must add this
+```
+
+Forgetting the reverse rule causes callbacks to be **silently dropped** with no error in
+the service. The only evidence is an `avc: denied { call }` in dmesg — which is easy to
+miss because `permissive=1` means the denial is logged but not enforced during dev testing.
+
+**Always scan dmesg for binder denials after testing in permissive mode:**
+```bash
+adb shell dmesg | grep "avc.*denied.*binder"
+```
+
+## 12. `/dev/gpiochipN` File Permissions — The RC File `on boot` Pattern
+
+Kernel-created device nodes (`/dev/gpiochipN`, `/dev/spidevN`, hwmon files) default to
+`root:root 0600`. If your daemon runs as `user=system`, it cannot open them.
+
+Always add an `on boot` section to your RC file:
+```
+on boot
+    chown root system /dev/gpiochip0
+    chmod 0660 /dev/gpiochip0
+```
+
+The `class main` service starts after `on boot` completes, so permissions are set in time.
+This exact pattern was required by ThermalControl (hwmon) and PIR Detector (gpiochip).
 
 ---
 
@@ -2636,6 +2674,136 @@ make vendorimage -j$(nproc)
 
 ---
 
+## Error 12 — App Shows "No Object Present" Even When Object Is in Front of Sensor
+
+### The Symptom
+
+After fixing the "PIR Service unavailable" banner (Error 11), the app connected successfully
+but always showed "No Object Present" — even when a hand was held directly in front of the PIR
+sensor. The daemon was running and registered. No crash, no error banner.
+
+### Debugging Commands Used
+
+```bash
+# Step 1: Is the daemon running?
+adb shell ps -eZ | grep pirdetectord
+# → u:r:pirdetectord:s0  system  497  pirdetectord  ✓ running
+# → u:r:kernel:s0  root  530  [irq/187-pirdetectord]  ✓ IRQ thread exists
+
+# Step 2: Are GPIO edges being detected at the HAL level?
+adb logcat -s GpioHal -d
+# → D GpioHal: GpioHal: edge=FALLING  ts=316084315626 ns  ✓ HAL sees edges
+
+# Step 3: Are edges reaching the service layer?
+adb logcat -s pirdetectord -d
+# → I pirdetectord: GPIO edge: FALLING (motion ended) → motionState=0  ✓
+
+# Step 4: Is the callback reaching the Java manager?
+adb logcat -s PirDetectorManager -d
+# → (only "PirDetectorManager created" and "registerListener" — no onMotionEvent)  ✗
+
+# Step 5: SELinux denial?
+adb shell dmesg | grep "avc.*denied" | grep -v "flags_health\|apexd\|aac"
+# → avc: denied { call } for comm="binder:497_2"
+#     scontext=u:r:pirdetectord:s0
+#     tcontext=u:r:platform_app:s0:c512,c768
+#     tclass=binder permissive=1
+```
+
+### Root Cause
+
+**SELinux was silently dropping the oneway Binder callbacks.**
+
+The service fires `onMotionEvent()` on the registered `IPirDetectorCallback`. That callback
+object lives in the app's process (`platform_app` domain). For the service to invoke it,
+the Binder runtime must perform a `binder:call` from `pirdetectord` → `platform_app`.
+
+The SELinux policy had rules allowing:
+- `pirdetectord → servicemanager` (to register the service)
+- `platform_app → pirdetectord` (for the app to call `getCurrentState`, `registerCallback`)
+
+But it was **missing** the reverse direction:
+- `pirdetectord → platform_app` (for the service to fire callbacks back)
+
+Without this rule, every `onMotionEvent()` call was silently denied. Because the callback
+is `oneway`, the service doesn't block waiting for a return — it fires and forgets. The
+denial happened invisibly with no error log in the service. The only evidence was the
+`avc: denied { call }` line in dmesg.
+
+The `permissive=1` suffix meant SELinux was in permissive mode during our dev-iteration
+runs (we had run `setenforce 0`), so the denial was logged but not enforced. After the
+full image flash restored enforcing mode, the callbacks were hard-blocked.
+
+### Key Insight: `oneway` callbacks require a reverse binder_call rule
+
+With normal (two-way) Binder calls:
+```
+Client → Service:  needs  allow client_domain service_domain:binder { call transfer };
+```
+
+With `oneway` callbacks (service calls back into client):
+```
+Client → Service:  needs  allow client_domain service_domain:binder { call transfer };
+Service → Client:  needs  allow service_domain client_domain:binder { call transfer };
+```
+
+The `oneway` direction is **always missed** during development because the service runs as
+root (via manual `adb shell`) when SELinux is permissive. It only becomes visible after
+a proper image flash with enforcing mode.
+
+### How the Denial Was Found
+
+The `permissive=1` flag in the dmesg AVC denial is the critical clue:
+```
+avc: denied { call } for comm="binder:497_2"
+    scontext=u:r:pirdetectord:s0 tcontext=u:r:platform_app:s0
+    tclass=binder permissive=1
+```
+- `scontext=u:r:pirdetectord:s0` — the binder call is coming FROM the pirdetectord domain
+- `tcontext=u:r:platform_app:s0` — it is targeting the platform_app domain
+- `tclass=binder { call }` — it is a Binder call (the oneway callback delivery)
+- `permissive=1` — currently allowed (permissive mode) but would be denied in enforcing mode
+
+### Fix
+
+Add `binder_call(pirdetectord, platform_app)` to `pirdetectord.te`:
+
+```te
+# Allow pirdetectord to invoke Binder callbacks into registered client apps.
+# The oneway IPirDetectorCallback.onMotionEvent() call goes FROM pirdetectord
+# INTO the platform_app domain. Without this rule, callbacks are silently dropped.
+binder_call(pirdetectord, platform_app)
+```
+
+`binder_call(A, B)` is an AOSP macro that expands to:
+```te
+allow A B:binder { call transfer };
+allow A servicemanager:binder transfer;
+```
+
+### Build and Deploy After Fix
+
+```bash
+# Rebuild just the vendor image (SELinux policy is in vendor)
+make vendorimage -j$(nproc)
+
+# Flash vendor image to SD card, or for quick testing:
+# SELinux in permissive mode means callbacks already work — verify with logcat:
+adb logcat -s pirdetectord,GpioHal,PirDetectorManager
+# Wave hand — expected output:
+# D GpioHal   : GpioHal: edge=RISING  ts=... ns
+# I pirdetectord: GPIO edge: RISING (motion detected) → motionState=1
+# (app UI should flip to "Object Present")
+```
+
+### The General Rule
+
+> Every `oneway` callback interface requires a **reverse** `binder_call` rule in SELinux.
+> Always scan dmesg for `avc: denied ... tclass=binder` after functional testing, even in
+> permissive mode — `permissive=1` denials become hard failures after flashing a full image.
+
+---
+
 ## Full Build and Test Sequence (Reproduced Successfully)
 
 Here is the complete sequence of commands to build and deploy the project from scratch,
@@ -2788,3 +2956,4 @@ adb logcat -s pirdetectord,PirDetectorManager,PirDetectorApp -d
 | 9 | SELinux: `pirdetector_service` undefined | Missing `service.te` file | Create `service.te` with type declaration + fix `service_contexts` |
 | 10 | SELinux: `gpio_device` undefined | Type doesn't exist in AOSP 15 base policy | Create custom `pirdetectord_gpio_device` type + label in `file_contexts` |
 | 11 | App shows "PIR Service unavailable" after full flash | `/dev/gpiochip0` is `root:root 0600`; daemon runs as `system` and can't open it | Add `chown`/`chmod` for `/dev/gpiochip0` in RC `on boot` section |
+| 12 | App shows "No Object Present" even when object is in front of sensor | SELinux denies `pirdetectord → platform_app` binder call; oneway callbacks silently dropped | Add `binder_call(pirdetectord, platform_app)` to `pirdetectord.te` |

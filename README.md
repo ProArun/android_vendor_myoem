@@ -16,7 +16,8 @@ vendor/myoem/
 │   └── myoem_rpi5.mk           ← inherits aosp_rpi5.mk, includes myoem_base.mk
 │
 ├── hal/
-│   └── thermalcontrol/         ← cc_library_shared: libthermalcontrolhal
+│   ├── thermalcontrol/         ← cc_library_shared: libthermalcontrolhal
+│   └── pirdetector/            ← cc_library_static: libgpiohal_pirdetector (GPIO char device, interrupt-driven)
 │
 ├── services/
 │   ├── calculator/             ← cc_binary: calculatord  (AIDL, Binder, VINTF)
@@ -25,19 +26,22 @@ vendor/myoem/
 │   ├── safemode/               ← cc_binary: safemoded     (VHAL, CarProperty)
 │   ├── hwcalculator/           ← cc_binary: hwcalculatord (SPI/HW-backed calculator)
 │   ├── potvolumed/             ← cc_binary: potvolumed    (SPI ADC → uinput volume)
-│   └── bmiapp/                 ← android_app: BmiSystemService (system UID intermediary)
+│   ├── bmiapp/                 ← android_app: BmiSystemService (system UID intermediary)
+│   └── pirdetector/            ← cc_binary: pirdetectord (GPIO interrupt → AIDL oneway callbacks)
 │
 ├── libs/
 │   ├── thermalcontrol/         ← java_sdk_library: thermalcontrol-manager
 │   ├── safemode/               ← java_library: safemode_library
-│   └── bmicalculator/          ← java_library: bmicalculator-manager + cc_library_shared: libbmicalmanager_jni
+│   ├── bmicalculator/          ← java_library: bmicalculator-manager + cc_library_shared: libbmicalmanager_jni
+│   └── pirdetector/            ← java_library: pirdetector-manager (IBinder constructor pattern)
 │
 └── apps/
     ├── ThermalMonitor/         ← android_app: ThermalMonitor
     ├── SafeModeDemo/           ← android_app: SafeModeDemo
     ├── BMICalculatorA/         ← android_app: BMICalculatorA (direct JNI)
     ├── BMICalculatorB/         ← android_app: BMICalculatorB (manager pattern)
-    └── BMICalculatorC/         ← android_app: BMICalculatorC (industry-standard)
+    ├── BMICalculatorC/         ← android_app: BMICalculatorC (industry-standard)
+    └── PirDetectorApp/         ← android_app: PirDetectorApp (interrupt-driven GPIO callbacks)
 ```
 
 ---
@@ -224,6 +228,65 @@ App ──(IBmiAppService AIDL)──→ BmiSystemService (UID=system) ──(JN
 
 ---
 
+### 8. PIR Motion Detector (`hal/pirdetector/` + `services/pirdetector/` + `libs/pirdetector/` + `apps/PirDetectorApp/`)
+
+Full-stack interrupt-driven motion detection: GPIO HAL → AIDL oneway callbacks → Java Manager → Jetpack Compose App. Uses an HC-SR501 PIR sensor wired to GPIO17 on the RPi5 40-pin header.
+
+**What makes this project different**: Zero polling. The daemon sleeps in the kernel scheduler and wakes only on hardware GPIO interrupts via the Linux GPIO character device API (`/dev/gpiochip0`).
+
+#### GPIO HAL (`hal/pirdetector/`)
+- `libgpiohal_pirdetector` — cc_library_static
+- Opens `/dev/gpiochip0` (RP1 south bridge, 40-pin header controller)
+- Uses `GPIO_GET_LINEEVENT_IOCTL` to request an interrupt-driven event fd
+- `waitForEdge()` blocks on `poll()` — zero CPU while idle
+- Self-pipe trick for clean EventThread shutdown
+
+#### Service (`services/pirdetector/`)
+
+| Item | Value |
+|------|-------|
+| Binary | `/vendor/bin/pirdetectord` |
+| AIDL | `com.myoem.pirdetector.IPirDetectorService/default` |
+| Operations | `getCurrentState()`, `registerCallback()`, `unregisterCallback()`, `getVersion()` |
+| Callback | `IPirDetectorCallback.onMotionEvent(MotionEvent)` — `oneway` |
+| GPIO chip | `/dev/gpiochip0` (RP1, label: `pinctrl-rp1`, 54 GPIOs) |
+| GPIO line | BCM 17 (physical pin 11) |
+| VINTF | `vintf/pirdetector.xml` |
+| AIDL stability | `stability: "vintf"` — cross-partition (vendor → system) |
+| AIDL backend | NDK only (`libbinder_ndk` / LLNDK) |
+| DeathRecipient | Auto-removes crashed client callbacks via `AIBinder_DeathRecipient` |
+
+#### Manager (`libs/pirdetector/`)
+- `pirdetector-manager` — java_library (`sdk_version: "system_current"`)
+- Takes `IBinder` in constructor (app calls `ServiceManager.checkService()`)
+- Dispatches `onMotionEvent()` to main thread via `Handler`
+- Exposes `MotionListener` interface: `onMotionDetected()` / `onMotionEnded()`
+
+#### App (`apps/PirDetectorApp/`)
+- `PirDetectorApp` — Jetpack Compose, MVI architecture
+- Animated card: green (no motion) ↔ red + scale pulse (motion detected)
+- `DisposableEffect` for lifecycle-aware connect/disconnect
+- `getCurrentState()` on connect to avoid stale UI on startup
+
+**Hardware:**
+
+| Pin | Connection |
+|-----|-----------|
+| HC-SR501 VCC | RPi5 5V (physical pin 2) |
+| HC-SR501 GND | RPi5 GND (physical pin 6) |
+| HC-SR501 OUT | RPi5 GPIO17 (physical pin 11) |
+
+**Modules:** `libgpiohal_pirdetector`, `pirdetectorservice-aidl`, `pirdetectord`, `pirdetector-vintf-fragment`, `pirdetector_client`, `pirdetector-manager`, `PirDetectorApp`
+
+**Key lessons from build:**
+- `/dev/gpiochip0` maps to `gpiochip569` in sysfs (RP1, 54 GPIOs) — numbering differs between `/dev/` and sysfs
+- VINTF-stable services must register as `type/instance` (e.g. `...IPirDetectorService/default`)
+- `oneway` callbacks require a **reverse** `binder_call` SELinux rule: `binder_call(pirdetectord, platform_app)`
+- `/dev/gpiochipN` is `root:root 0600` at boot — add `chown`/`chmod` in RC `on boot` section
+- `frozen: true` (not `frozen: false`) when AIDL snapshot matches source exactly
+
+---
+
 ## Build Commands
 
 ```bash
@@ -239,6 +302,10 @@ m hwcalculatord
 m potvolumed
 m BMICalculatorA
 m BmiSystemService BMICalculatorB BMICalculatorC
+m pirdetectord pirdetector_client pirdetector-manager PirDetectorApp
+
+# AIDL API snapshot (one-time bootstrap after creating aidl_api/ directory)
+m pirdetectorservice-aidl-update-api
 ```
 
 ## Dev Iteration (no full rebuild)
@@ -269,6 +336,10 @@ adb reboot
 | No `adb disable-verity` | OEM unlock not available |
 | Full image | Write to SD card via `dd` |
 | SELinux hwmon | `sysfs_hwmon` does not exist in AOSP 15 — use generic `sysfs` |
+| GPIO gpiochip | `/dev/gpiochip0` = RP1 (pinctrl-rp1) on RPi5; sysfs shows it as `gpiochip569` — numbering is unrelated |
+| GPIO permissions | `/dev/gpiochipN` is `root:root 0600` at boot; add `chown`/`chmod` in RC `on boot` section |
+| VINTF service name | VINTF-stable services must use `type/instance` format: `com.myoem.X.IFoo/default` |
+| oneway callbacks | Require reverse SELinux `binder_call(service, client)` rule — forgetting it causes silent callback drops |
 
 ## Key Debugging Commands
 
@@ -303,3 +374,4 @@ adb logcat -b kernel
 | `Testing_Article_Series.md` | Unit + instrumented testing in vendor layer |
 | `ADB_Commands_AOSP_Dev.md` | ADB reference for AOSP development |
 | `Shell_Commands_AOSP_Dev.md` | Shell command reference |
+| `PirDetector_Article_Series.md` | GPIO HAL, interrupt-driven callbacks, VINTF AIDL, SELinux for device nodes |
