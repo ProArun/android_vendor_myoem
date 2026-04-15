@@ -1,0 +1,47 @@
+// Copyright (C) 2025 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+// soong_namespace is REQUIRED for every module under vendor/myoem/.
+// Imports the service namespace so we can reference pirdetectorservice-aidl-V1-java.
+soong_namespace {
+    imports: ["vendor/myoem/services/pirdetector"],
+}
+
+// ── Java Manager Library ──────────────────────────────────────────────────────
+//
+// pirdetector-manager — the Java bridge between Android apps and pirdetectord.
+//
+// This library:
+//   1. Implements IPirDetectorCallback.Stub to receive oneway Binder callbacks
+//      from pirdetectord.
+//   2. Re-dispatches motion events to the app's MotionListener on the main thread.
+//   3. Exposes a clean API: registerListener / unregisterListener / getCurrentState.
+//
+// ── sdk_version: "system_current" ────────────────────────────────────────────
+// ServiceManager is @hide — it is not in the public SDK. The app (platform_apis:true)
+// calls ServiceManager.checkService() and passes the IBinder to the PirDetectorManager
+// constructor. This library only needs sdk_version:"system_current" (public SDK +
+// system APIs) — it never calls @hide APIs directly.
+//
+// This is the same pattern used in thermalcontrol-manager and safemode_library.
+//
+// ── No vendor: true ──────────────────────────────────────────────────────────
+// PirDetectorApp installs on the SYSTEM partition (platform_apis: true requires it).
+// This library is statically linked into PirDetectorApp, so it follows the app's
+// partition. java_library with vendor: true cannot be statically linked into a
+// system app. Same pattern as thermalcontrol-manager and safemode_library.
+// ─────────────────────────────────────────────────────────────────────────────
+java_library {
+    name: "pirdetector-manager",
+
+    srcs: ["java/**/*.java"],
+
+    libs: [
+        // AIDL-generated Java stubs, V1 (created by update-api)
+        "pirdetectorservice-aidl-V1-java",
+    ],
+
+    // Public SDK + system APIs only. No @hide calls in this library.
+    // The app (platform_apis:true) bridges the @hide ServiceManager gap.
+    sdk_version: "system_current",
+}

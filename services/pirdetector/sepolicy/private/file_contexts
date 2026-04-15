@@ -1,0 +1,21 @@
+# Copyright (C) 2025 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+#
+# file_contexts — SELinux file labels for PIR Detector files on the vendor partition.
+#
+# Format: <path_regex>  <context>
+#
+# This labels /vendor/bin/pirdetectord with the pirdetectord_exec type.
+# When init exec()s this binary, the kernel sees the exec_type and triggers the
+# domain transition defined by init_daemon_domain(pirdetectord) in pirdetectord.te.
+# Without this label, the binary runs in the init domain — wrong and dangerous.
+#
+# The regex is anchored (must match from /):
+/vendor/bin/pirdetectord    u:object_r:pirdetectord_exec:s0
+
+# Label /dev/gpiochip0 (the RP1 40-pin header GPIO controller on RPi5).
+# Without this, the device gets the generic "device" label which is blocked by
+# the neverallow in system/sepolicy/private/domain.te:
+#   neverallow domain device:chr_file { read write open };
+# We assign a custom type that only pirdetectord can access.
+/dev/gpiochip[0-9]*    u:object_r:pirdetectord_gpio_device:s0

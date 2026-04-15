@@ -1,0 +1,46 @@
+// Copyright (C) 2025 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+// soong_namespace is REQUIRED for every module under vendor/myoem/.
+// It isolates this directory's module names from colliding with AOSP or other
+// vendor module names. Listed in myoem_base.mk under PRODUCT_SOONG_NAMESPACES.
+soong_namespace {}
+
+// ── GPIO HAL static library ───────────────────────────────────────────────────
+//
+// cc_library_static — compiled and linked directly into pirdetectord.
+// Not a shared library because:
+//   1. Only one consumer (pirdetectord) needs it.
+//   2. Avoids a separate .so on the vendor partition.
+//   3. Simpler linking — no SONAME, no install path.
+//
+// Key design:
+//   - Uses Linux GPIO character device ioctl (GPIO_GET_LINEEVENT_IOCTL)
+//     from <linux/gpio.h> — a kernel UAPI header, always available in AOSP.
+//   - poll() on the event fd — hardware-interrupt-driven, zero CPU polling.
+//   - Self-pipe trick for clean shutdown (shutdown() → waitForEdge() returns).
+//   - No external library dependency beyond liblog and standard libc.
+//
+// export_include_dirs makes the "include/" directory available to any module
+// that lists "libgpiohal_pirdetector" in its static_libs. The service can then
+// include "pirdetector/GpioHal.h" without specifying an explicit path.
+// ─────────────────────────────────────────────────────────────────────────────
+cc_library_static {
+    name: "libgpiohal_pirdetector",
+    vendor: true,
+
+    srcs: ["src/GpioHal.cpp"],
+
+    // Export the include/ directory so dependents can include pirdetector/GpioHal.h
+    export_include_dirs: ["include"],
+
+    shared_libs: [
+        "liblog",   // ALOGI / ALOGE / ALOGD macros
+    ],
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}

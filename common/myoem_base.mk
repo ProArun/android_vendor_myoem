@@ -23,7 +23,11 @@ PRODUCT_SOONG_NAMESPACES += \
     vendor/myoem/libs/bmicalculator \
     vendor/myoem/apps/BMICalculatorB \
     vendor/myoem/services/bmiapp \
-    vendor/myoem/apps/BMICalculatorC
+    vendor/myoem/apps/BMICalculatorC \
+    vendor/myoem/hal/pirdetector \
+    vendor/myoem/services/pirdetector \
+    vendor/myoem/libs/pirdetector \
+    vendor/myoem/apps/PirDetectorApp
 
 # ── OEM services (present on all products) ─────────────────────────────────
 PRODUCT_PACKAGES += \
@@ -53,7 +57,12 @@ PRODUCT_PACKAGES += \
     bmiapp-aidl-java \
     libbmiappsvc_jni \
     BmiSystemService \
-    BMICalculatorC
+    BMICalculatorC \
+    pirdetectord \
+    pirdetector-vintf-fragment \
+    pirdetector_client \
+    pirdetector-manager \
+    PirDetectorApp
 
 
 # ── SELinux ────────────────────────────────────────────────────────────────
@@ -66,7 +75,8 @@ BOARD_VENDOR_SEPOLICY_DIRS += \
     vendor/myoem/services/thermalcontrol/sepolicy/private \
     vendor/myoem/services/safemode/sepolicy/private \
     vendor/myoem/services/potvolumed/sepolicy/private \
-    vendor/myoem/services/hwcalculator/sepolicy/private
+    vendor/myoem/services/hwcalculator/sepolicy/private \
+    vendor/myoem/services/pirdetector/sepolicy/private
 
 # ── OEM properties ────────────────────────────────────────────────────────
 # Readable at runtime via android.os.SystemProperties.get("ro.myoem.version")

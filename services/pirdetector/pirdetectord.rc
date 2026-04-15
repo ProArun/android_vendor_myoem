@@ -1,0 +1,49 @@
+# Copyright (C) 2025 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+#
+# pirdetectord.rc — init configuration for the PIR Detector vendor daemon
+#
+# Installed to: /vendor/etc/init/pirdetectord.rc
+# (Android.bp init_rc property handles the installation automatically)
+
+# ── Service definition ────────────────────────────────────────────────────────
+#
+# class main       — starts with the "main" service class (after core services,
+#                    after ServiceManager is up). This ensures AServiceManager_addService
+#                    succeeds at startup.
+#
+# user system      — runs as the "system" UID (AID_SYSTEM = 1000).
+#                    The SELinux policy grants this UID access to gpio_device.
+#                    Running as root would work but is unnecessary and less secure.
+#
+# group system     — group membership for sysfs/devfs access.
+#
+# No "disabled" keyword — the service starts automatically with class main.
+# No "oneshot" — init will restart the daemon if it crashes (default behaviour).
+#
+# ── RC restart behaviour ──────────────────────────────────────────────────────
+# If pirdetectord crashes:
+#   - init waits ~4 seconds (default restart_period) then restarts it.
+#   - The EventThread will re-open the GPIO fd and resume from the last state.
+#   - Any registered callbacks from crashed clients are already gone (client
+#     crash = client Binder gone = DeathRecipient fired = callback removed).
+#     So after a service restart, clients will reconnect via PirDetectorManager's
+#     DeathRecipient + reconnect logic.
+
+# ── Boot-time GPIO device permissions ────────────────────────────────────────
+# /dev/gpiochip0 is created by the kernel as root:root 0600.
+# pirdetectord runs as user=system. Without chown+chmod, open() fails silently
+# (GpioHal::init() returns false → daemon exits → init crash-loops it).
+#
+# chown root system  → sets group to system (AID_SYSTEM)
+# chmod 0660         → allows group read/write
+# The SELinux label (pirdetectord_gpio_device) is set via file_contexts at build time
+# and is already applied when the uevent creates the /dev node.
+on boot
+    chown root system /dev/gpiochip0
+    chmod 0660 /dev/gpiochip0
+
+service pirdetectord /vendor/bin/pirdetectord
+    class main
+    user system
+    group system

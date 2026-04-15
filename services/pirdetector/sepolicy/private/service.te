@@ -1,0 +1,7 @@
+# Copyright (C) 2025 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+#
+# Declares the SELinux service type for pirdetectord's Binder service.
+# app_api_service    — allows system apps to look up and call this service
+# service_manager_type — required for any type used in service_contexts
+type pirdetector_service, app_api_service, service_manager_type;

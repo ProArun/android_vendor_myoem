@@ -1,0 +1,33 @@
+<!-- Copyright (C) 2025 MyOEM -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!--
+    VINTF manifest fragment for the PIR Detector vendor service.
+
+    Installed to: /vendor/etc/vintf/manifest/pirdetector.xml
+    (by the vintf_fragment rule in Android.bp)
+
+    WHY is this file required?
+    ──────────────────────────
+    When a Binder object has VINTF stability (either set by @VintfStability in AIDL
+    or by AIBinder_markVintfStability() in code), the ServiceManager checks that
+    the service is declared in the VINTF manifest BEFORE allowing registration via
+    AServiceManager_addService(). If this file is missing, addService() fails with:
+
+      "VINTF requires ... to be declared in the VINTF manifest"
+
+    The manifest fragment is merged with the device's main manifest at build time.
+    The system reads the merged manifest at runtime to validate service registration.
+
+    Field details:
+      format="aidl"       — AIDL-based service (not HIDL)
+      <name>              — the AIDL package name (matches the .aidl file package)
+      <version>           — matches the frozen API version in aidl_api/ (version "1")
+      <fqname>            — fully-qualified name: InterfaceName/instance
+                            "default" is the conventional instance name for single-instance services
+-->
+<manifest version="8.0" type="device">
+    <hal format="aidl">
+        <name>com.myoem.pirdetector</name>
+        <fqname>IPirDetectorService/default</fqname>
+    </hal>
+</manifest>
