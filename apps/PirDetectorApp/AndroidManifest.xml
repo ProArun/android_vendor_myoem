@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2025 MyOEM -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.myoem.pirdetectorapp">
+
+    <!--
+        No special permissions needed for this app.
+
+        The PIR sensor is accessed via pirdetectord (a vendor Binder service) — the
+        service owns the GPIO hardware access and enforces SELinux policy. The app
+        itself does not touch /dev/gpiochip4 directly, so no GPIO permission is needed
+        at the app level.
+
+        ServiceManager.checkService() is available to platform apps (platform_apis:true
+        in Android.bp) without any manifest permission.
+    -->
+
+    <application
+        android:label="PIR Detector"
+        android:theme="@android:style/Theme.DeviceDefault.DayNight">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+    </application>
+
+</manifest>

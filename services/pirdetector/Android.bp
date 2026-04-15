@@ -1,0 +1,178 @@
+// Copyright (C) 2025 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+// soong_namespace is REQUIRED for every module under vendor/myoem/.
+// Imports the GPIO HAL namespace so we can reference libgpiohal_pirdetector
+// without specifying a full path.
+soong_namespace {
+    imports: ["vendor/myoem/hal/pirdetector"],
+}
+
+// ── AIDL Interface ────────────────────────────────────────────────────────────
+//
+// Generates NDK (C++) and Java stubs from the 3 AIDL files:
+//   MotionEvent.aidl           — Parcelable data bundle
+//   IPirDetectorCallback.aidl  — oneway callback: service → client
+//   IPirDetectorService.aidl   — main service interface: client → service
+//
+// Generated library names (V1 — versions_with_info + frozen:false):
+//   pirdetectorservice-aidl-V1-ndk   — C++ NDK stubs (for pirdetectord and CLI client)
+//   pirdetectorservice-aidl-V1-java  — Java stubs (for pirdetector-manager library)
+//
+// WHY stability:"vintf"?
+//   pirdetectord is a vendor binary (vendor: true). Without VINTF stability, libbinder
+//   rejects cross-partition calls from system apps with BAD_TYPE.
+//   stability:"vintf" causes the AIDL compiler to emit AIBinder_markVintfStability()
+//   inside the generated BnPirDetectorService constructor — upgrades the Binder object
+//   to cross-partition stability. Do NOT call it manually in main.cpp (double-mark = FATAL).
+//
+// WHY frozen: false (no versions_with_info)?
+//   versions_with_info requires a frozen API snapshot in aidl_api/ for each version.
+//   That snapshot doesn't exist during initial development and causes a Soong bootstrap
+//   deadlock (the V1 stubs are undefined before update-api can run to create the snapshot).
+//
+//   frozen: false + unstable: true tells Soong to generate stubs directly from the
+//   source AIDL files without an aidl_api/ snapshot. Generated modules are UNVERSIONED:
+//   pirdetectorservice-aidl-ndk and pirdetectorservice-aidl-java (no -V1- infix).
+//   stability:"vintf" is orthogonal — still marks Binder objects cross-partition stable.
+//
+//   When the interface is finalised for production, add:
+//     versions_with_info: [{ version: "1", imports: [] }]
+//   and run: m pirdetectorservice-aidl-update-api
+//   to create the aidl_api/ snapshot and enable backwards-compatibility enforcement.
+//
+// WHY NDK backend, NOT cpp backend?
+//   libbinder_ndk (LLNDK) links against system libbinder.so (kHeader='SYST').
+//   Java clients also use kHeader='SYST'. They are compatible.
+//   cpp backend uses vendor libbinder.so (kHeader='VNDR') — incompatible with Java clients.
+// ─────────────────────────────────────────────────────────────────────────────
+aidl_interface {
+    name: "pirdetectorservice-aidl",
+    owner: "myoem",
+    vendor_available: true, // stubs usable by both vendor and system modules
+    stability: "vintf", // cross-partition: system apps can call vendor service
+    srcs: [
+        "aidl/com/myoem/pirdetector/MotionEvent.aidl",
+        "aidl/com/myoem/pirdetector/IPirDetectorCallback.aidl",
+        "aidl/com/myoem/pirdetector/IPirDetectorService.aidl",
+    ],
+    local_include_dir: "aidl",
+    // versions_with_info + frozen:true — V1 snapshot in aidl_api/1/ IS the current interface.
+    // frozen:true = snapshot matches source exactly; no backwards-compat drift allowed.
+    // The aidl_api/pirdetectorservice-aidl/1/ directory was created manually to bootstrap.
+    // Generated module names: pirdetectorservice-aidl-V1-ndk, pirdetectorservice-aidl-V1-java.
+    // To add new methods later: change frozen:true→false, edit source AIDL, run update-api.
+    versions_with_info: [
+        {
+            version: "1",
+            imports: [],
+        },
+    ],
+    frozen: true,
+    backend: {
+        cpp: { // VNDR stability — incompatible with Java clients
+            enabled: false,
+        },
+        java: { // for pirdetector-manager java_library
+            enabled: true,
+        },
+        ndk: { // for pirdetectord cc_binary (SYST stability via LLNDK)
+            enabled: true,
+        },
+        rust: {
+            enabled: false,
+        },
+    },
+}
+
+// ── Binder Service Daemon ─────────────────────────────────────────────────────
+//
+// pirdetectord — the vendor daemon that:
+//   1. Opens /dev/gpiochip4 via GpioHal::init()
+//   2. Spawns EventThread: loops on GpioHal::waitForEdge() (interrupt-driven)
+//   3. On each GPIO edge: notifies all registered IPirDetectorCallback clients
+//   4. Registers itself in ServiceManager as "com.myoem.pirdetector.IPirDetectorService"
+//   5. Blocks on ABinderProcess_joinThreadPool() serving Binder calls
+//
+// Installed to: /vendor/bin/pirdetectord
+// RC file installed to: /vendor/etc/init/pirdetectord.rc (via init_rc)
+//
+// Key dependencies:
+//   libbinder_ndk          — NDK Binder (LLNDK). Cross-partition compatible.
+//   liblog                 — ALOGI / ALOGE / ALOGD macros
+//   pirdetectorservice-aidl-V1-ndk — Our own AIDL stubs (NDK backend, V1)
+//   libgpiohal_pirdetector — GPIO HAL static library from hal/pirdetector/
+// ─────────────────────────────────────────────────────────────────────────────
+cc_binary {
+    name: "pirdetectord",
+    vendor: true, // Installed to /vendor partition
+    init_rc: ["pirdetectord.rc"],
+
+    srcs: [
+        "src/PirDetectorService.cpp",
+        "src/main.cpp",
+    ],
+
+    local_include_dirs: ["include"],
+
+    shared_libs: [
+        "libbinder_ndk", // NDK Binder — LLNDK, kHeader='SYST', cross-partition safe
+        "liblog", // logcat
+    ],
+
+    static_libs: [
+        // Our AIDL stubs — NDK backend, V1 (created by update-api)
+        "pirdetectorservice-aidl-V1-ndk",
+        // GPIO HAL — cc_library_static from hal/pirdetector/
+        // Linked directly into pirdetectord (no separate .so needed)
+        "libgpiohal_pirdetector",
+    ],
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}
+
+// ── VINTF Manifest Fragment ───────────────────────────────────────────────────
+//
+// Declares com.myoem.pirdetector.IPirDetectorService to the VINTF framework.
+// Required so AServiceManager_addService() succeeds for a VINTF-stable service:
+// ServiceManager checks that the service is declared in the device manifest.
+//
+// Installed to: /vendor/etc/vintf/manifest/pirdetector.xml
+// ─────────────────────────────────────────────────────────────────────────────
+vintf_fragment {
+    name: "pirdetector-vintf-fragment",
+    src: "vintf/pirdetector.xml",
+    vendor: true,
+}
+
+// ── CLI Test Client ───────────────────────────────────────────────────────────
+//
+// pirdetector_client — shell test binary.
+// Run on device: adb shell /vendor/bin/pirdetector_client
+// Validates AIDL callback path without needing the Java app.
+// ─────────────────────────────────────────────────────────────────────────────
+cc_binary {
+    name: "pirdetector_client",
+    vendor: true,
+
+    srcs: ["test/pirdetector_client.cpp"],
+
+    shared_libs: [
+        "libbinder_ndk",
+        "liblog",
+    ],
+
+    static_libs: [
+        "pirdetectorservice-aidl-V1-ndk",
+    ],
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}

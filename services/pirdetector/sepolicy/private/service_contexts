@@ -1,0 +1,11 @@
+# Copyright (C) 2025 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+#
+# service_contexts — maps the ServiceManager service name to a SELinux label.
+#
+# The service name MUST use the "type/instance" format for VINTF-stable services:
+#   com.myoem.pirdetector.IPirDetectorService/default
+#
+# This matches what pirdetectord passes to AServiceManager_addService() in main.cpp.
+# The pirdetector_service type is declared in service.te.
+com.myoem.pirdetector.IPirDetectorService/default    u:object_r:pirdetector_service:s0

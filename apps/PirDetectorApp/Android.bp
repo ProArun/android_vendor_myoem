@@ -1,0 +1,83 @@
+// Copyright (C) 2025 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+// soong_namespace is REQUIRED for every module under vendor/myoem/.
+// Imports:
+//   libs/pirdetector     — pirdetector-manager (java_library)
+//   services/pirdetector — pirdetectorservice-aidl-V1-java (AIDL stubs)
+soong_namespace {
+    imports: [
+        "vendor/myoem/libs/pirdetector",
+        "vendor/myoem/services/pirdetector",
+    ],
+}
+
+// ── PirDetectorApp ────────────────────────────────────────────────────────────
+//
+// android_app — the PIR Detector app, installed on the SYSTEM partition.
+//
+// ── Why NO vendor: true ───────────────────────────────────────────────────────
+// Android apps that need platform_apis: true CANNOT also have vendor: true.
+// Soong rejects that combination:
+//   "sdk_version must have a value when the module is located at vendor or product"
+//
+// platform_apis: true means the app is compiled against the full hidden API surface.
+// That surface is only available on the SYSTEM partition. Vendor apps must use an
+// explicit sdk_version (public SDK only) — they cannot use @hide APIs.
+//
+// The correct pattern (same as ThermalMonitor, SafeModeDemo, BMICalculatorA):
+//   - No vendor: true  → installs to /system/app/ or /system/priv-app/
+//   - platform_apis: true → can call ServiceManager.checkService() (@hide)
+//   - certificate: "platform" → signed with platform key, runtime allows @hide calls
+//
+// The app lives in vendor/myoem/apps/ (source location) but installs to the
+// SYSTEM partition at build time. Source location ≠ install partition.
+//
+// ── static_libs ───────────────────────────────────────────────────────────────
+// All Compose and AndroidX dependencies are statically linked into the APK.
+// Match the library names confirmed working in SafeModeDemo and ThermalMonitor.
+// ─────────────────────────────────────────────────────────────────────────────
+android_app {
+    name: "PirDetectorApp",
+    // NO vendor: true — apps with platform_apis must live on the system partition
+
+    // platform_apis:true — needed for ServiceManager.checkService() (@hide)
+    platform_apis: true,
+
+    // Sign with the platform key — required for platform API access at runtime
+    certificate: "platform",
+
+    manifest: "AndroidManifest.xml",
+
+    srcs: ["src/**/*.kt"],
+
+    static_libs: [
+        // ── OEM manager and AIDL stubs ──────────────────────────────────────
+        "pirdetector-manager",
+        "pirdetectorservice-aidl-V1-java",
+
+        // ── Compose core (names confirmed working in SafeModeDemo) ──────────
+        "androidx.compose.ui_ui",
+        "androidx.compose.ui_ui-graphics",
+        "androidx.compose.ui_ui-text",
+        "androidx.compose.ui_ui-unit",
+        "androidx.compose.ui_ui-tooling-preview",
+        "androidx.compose.material3_material3",
+        "androidx.compose.runtime_runtime",
+        "androidx.compose.animation_animation",
+        "androidx.compose.animation_animation-core",
+        "androidx.activity_activity-compose",
+        "androidx.compose.foundation_foundation",
+        "androidx.compose.foundation_foundation-layout",
+
+        // ── Lifecycle / ViewModel ─────────────────────────────────────────────
+        "androidx.lifecycle_lifecycle-viewmodel-ktx",
+        "androidx.lifecycle_lifecycle-viewmodel-compose",
+        "androidx.lifecycle_lifecycle-runtime-compose",
+    ],
+
+    optimize: {
+        // Disable R8/ProGuard for this learning project — easier debugging
+        enabled: false,
+    },
+}

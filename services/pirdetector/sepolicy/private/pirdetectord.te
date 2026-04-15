@@ -1,0 +1,99 @@
+# Copyright (C) 2025 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+#
+# pirdetectord.te — SELinux type enforcement for the PIR Detector daemon
+#
+# ── VERIFY BEFORE FIRST BOOT ──────────────────────────────────────────────────
+# Run these commands on the device to confirm the actual labels:
+#
+#   # Check the gpiochip device label
+#   adb shell ls -laZ /dev/gpiochip0
+#   # Expected: crw-rw---- root system u:object_r:gpio_device:s0
+#   #   → use "gpio_device" in this policy
+#   # If you see a different type (e.g. "sysfs"), update the allow rule below.
+#
+#   # Verify daemon is running in the right domain
+#   adb shell ps -eZ | grep pirdetect
+#   # Expected: u:r:pirdetectord:s0  system  /vendor/bin/pirdetectord
+#
+#   # Check for denials (run after boot and first motion event)
+#   adb logcat -d | grep "avc: denied" | grep pirdetect
+# ──────────────────────────────────────────────────────────────────────────────
+
+# ── Domain and exec type definitions ─────────────────────────────────────────
+# type pirdetectord        — the SELinux domain the daemon runs in
+# type pirdetectord_exec   — the label on the /vendor/bin/pirdetectord binary
+#
+# exec_type:        marks this as an executable type (required for domain transitions)
+# vendor_file_type: marks the file as living on the vendor partition
+# file_type:        required for any type in file_contexts
+type pirdetectord, domain;
+type pirdetectord_exec, exec_type, vendor_file_type, file_type;
+
+# Custom type for /dev/gpiochipN character devices on RPi5.
+# Avoids the AOSP neverallow: "neverallow domain device:chr_file { read write open }"
+# Labeled via file_contexts: /dev/gpiochip[0-9]*
+type pirdetectord_gpio_device, dev_type;
+
+# ── Domain transition: init → pirdetectord ───────────────────────────────────
+# init_daemon_domain() is an AOSP macro that:
+#   1. Allows init to spawn a process in the pirdetectord domain
+#   2. Grants the domain basic init-inherited permissions
+#   3. Sets up the domain transition triggered when init exec()s pirdetectord_exec
+init_daemon_domain(pirdetectord)
+
+# ── Binder IPC ────────────────────────────────────────────────────────────────
+# binder_use()     — allow the domain to use the Binder driver (/dev/binder)
+#                    Required for ABinderProcess_startThreadPool() and all IPC.
+# binder_service() — allow the domain to register as a Binder service in
+#                    ServiceManager (addService/checkService).
+binder_use(pirdetectord)
+binder_service(pirdetectord)
+
+# ── ServiceManager interaction ────────────────────────────────────────────────
+# Allow pirdetectord to call ServiceManager (to register itself) and to
+# be called by other processes via the ServiceManager lookup.
+allow pirdetectord servicemanager:binder { call transfer };
+allow pirdetectord pirdetector_service:service_manager { add find };
+
+# ── Binder callback to app clients ────────────────────────────────────────────
+# pirdetectord fires oneway callbacks (onMotionEvent) back to registered clients.
+# The client app runs in the platform_app domain. Without this rule, the
+# binder:call from pirdetectord → platform_app is denied and callbacks are
+# silently dropped — the app never sees motion events.
+# binder_call(pirdetectord, platform_app) expands to:
+#   allow pirdetectord platform_app:binder { call transfer };
+binder_call(pirdetectord, platform_app)
+
+# Allow client processes (e.g. the app, system_server) to find and call
+# the pirdetectord service.
+# The service_manager "find" is also needed in the app domain — but that
+# app will use the Java manager (ServiceManager.checkService() from system).
+# The system domain already has broad service_manager permissions in AOSP base.
+
+# ── GPIO character device access ──────────────────────────────────────────────
+# /dev/gpiochipN is labeled with type "gpio_device" in AOSP base policy.
+# Verify the actual label on device:
+#   adb shell ls -laZ /dev/gpiochip0
+#   → crw-rw---- root system u:object_r:gpio_device:s0
+#
+# Required operations:
+#   open — to open /dev/gpiochip0
+#   read — O_RDONLY mode used in init() for the ioctl
+#   ioctl — GPIO_GET_LINEEVENT_IOCTL to request the line event fd
+#
+# After GPIO_GET_LINEEVENT_IOCTL, the kernel returns a new fd (the event fd).
+# This fd is read in waitForEdge() — but it is a derived fd, not a new open(),
+# so no additional "open" permission is needed for the event fd.
+#
+# VERIFIED: adb shell ls -laZ /dev/gpiochip0
+#   → u:object_r:device:s0  (generic device label, not gpio_device)
+#   gpio_device type does not exist in AOSP 15 base vendor policy.
+allow pirdetectord pirdetectord_gpio_device:chr_file { open read ioctl };
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+# logd_writer() macro does not exist in AOSP 15 vendor policy.
+# Logd access is inherited from init_daemon_domain() — no explicit rule needed.
+# If logcat output disappears, check:
+#   adb logcat -d | grep "avc: denied" | grep pirdetectord
+# and add specific allow rules for logd_socket or logdw as needed.
