@@ -64,7 +64,8 @@ PRODUCT_PACKAGES += \
     pirdetector_client \
     pirdetector-manager \
     PirDetectorApp \
-    helloworldd
+    helloworldd \
+    NativeCal
 
 
 # ── SELinux ────────────────────────────────────────────────────────────────
