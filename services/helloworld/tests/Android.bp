@@ -1,0 +1,42 @@
+// Copyright (C) 2024 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VTS test binary for HelloWorld daemon
+//
+// Why VTS and not CTS?
+//   CTS (Compatibility Test Suite) — verifies public Android API compatibility;
+//     it has no knowledge of vendor-specific binaries or vendor partition paths.
+//   VTS (Vendor Test Suite) — designed exactly for testing vendor code:
+//     HALs, native daemons, and vendor services. VTS runs with system
+//     privileges and can observe vendor processes and their logcat output.
+//
+// Build : m VtsHelloWorldTest
+// Run   : atest VtsHelloWorldTest
+// ─────────────────────────────────────────────────────────────────────────────
+
+cc_test {
+    name: "VtsHelloWorldTest",
+
+    // vendor:true — binary lives on the vendor partition, same as helloworldd.
+    vendor: true,
+
+    srcs: ["VtsHelloWorldTest.cpp"],
+
+    shared_libs: [
+        "liblog",   // ALOGD for test diagnostics
+    ],
+
+    static_libs: [
+        "libgtest",
+        "libgtest_main",
+    ],
+
+    test_suites: ["vts"],
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}

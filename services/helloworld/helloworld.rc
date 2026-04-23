@@ -1,0 +1,7 @@
+# Copyright (C) 2024 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+
+service helloworldd /vendor/bin/helloworldd
+    class main
+    user system
+    group system
