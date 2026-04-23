@@ -1,0 +1,32 @@
+// Copyright (C) 2024 MyOEM
+// SPDX-License-Identifier: Apache-2.0
+
+soong_namespace {}
+
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+// ── Hello World daemon ────────────────────────────────────────────────────────
+// The simplest possible vendor native daemon.
+// No Binder, no AIDL — just a loop that logs "Hello World" every 30 seconds.
+// Installed to: /vendor/bin/helloworldd
+// ─────────────────────────────────────────────────────────────────────────────
+
+cc_binary {
+    name: "helloworldd",
+    vendor: true,
+    init_rc: ["helloworld.rc"],
+
+    srcs: ["src/main.cpp"],
+
+    shared_libs: [
+        "liblog",   // ALOGI / ALOGE — logs to logd via /dev/socket/logd
+    ],
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}

@@ -1,0 +1,5 @@
+# Copyright (C) 2024 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+
+# Label the helloworldd executable so init can transition into the helloworldd domain.
+/vendor/bin/helloworldd    u:object_r:helloworldd_exec:s0

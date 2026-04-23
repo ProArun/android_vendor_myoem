@@ -27,7 +27,8 @@ PRODUCT_SOONG_NAMESPACES += \
     vendor/myoem/hal/pirdetector \
     vendor/myoem/services/pirdetector \
     vendor/myoem/libs/pirdetector \
-    vendor/myoem/apps/PirDetectorApp
+    vendor/myoem/apps/PirDetectorApp \
+    vendor/myoem/services/helloworld
 
 # ── OEM services (present on all products) ─────────────────────────────────
 PRODUCT_PACKAGES += \
@@ -62,7 +63,8 @@ PRODUCT_PACKAGES += \
     pirdetector-vintf-fragment \
     pirdetector_client \
     pirdetector-manager \
-    PirDetectorApp
+    PirDetectorApp \
+    helloworldd
 
 
 # ── SELinux ────────────────────────────────────────────────────────────────
@@ -76,7 +78,8 @@ BOARD_VENDOR_SEPOLICY_DIRS += \
     vendor/myoem/services/safemode/sepolicy/private \
     vendor/myoem/services/potvolumed/sepolicy/private \
     vendor/myoem/services/hwcalculator/sepolicy/private \
-    vendor/myoem/services/pirdetector/sepolicy/private
+    vendor/myoem/services/pirdetector/sepolicy/private \
+    vendor/myoem/services/helloworld/sepolicy/private
 
 # ── OEM properties ────────────────────────────────────────────────────────
 # Readable at runtime via android.os.SystemProperties.get("ro.myoem.version")

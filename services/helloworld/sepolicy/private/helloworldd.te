@@ -1,0 +1,11 @@
+# Copyright (C) 2024 MyOEM
+# SPDX-License-Identifier: Apache-2.0
+
+# Process domain for the helloworldd binary.
+type helloworldd, domain;
+type helloworldd_exec, exec_type, vendor_file_type, file_type;
+
+# Allow init to launch helloworldd and transition into this domain.
+# This macro also grants the basic permissions every daemon needs:
+# stdin/stdout/stderr, /proc self-reads, signal handling, etc.
+init_daemon_domain(helloworldd)
