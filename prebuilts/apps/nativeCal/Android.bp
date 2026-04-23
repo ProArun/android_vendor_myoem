@@ -1,0 +1,12 @@
+android_app_import {
+    name: "NativeCal",
+    apk: "NativeCal.apk",
+
+    presigned: true,
+    preprocessed: true,
+
+    privileged: false,
+    dex_preopt: {
+        enabled: false,
+    },
+}
